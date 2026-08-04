@@ -15,7 +15,7 @@ export default function Home() {
   const { settings, projects, services, testimonials, packages } = useSiteContent();
 
   return (
-    <div className="bg-black text-white min-h-screen selection:bg-white selection:text-black font-sans">
+    <div className="bg-transparent text-white min-h-screen selection:bg-white selection:text-black font-sans">
       <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       <Hero settings={settings} />
       <WorkGrid projects={projects} />
