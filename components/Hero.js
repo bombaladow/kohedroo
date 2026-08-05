@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { ArrowDown, MessageSquare } from 'lucide-react';
 
 export default function Hero({ settings }) {
@@ -12,20 +13,26 @@ export default function Hero({ settings }) {
   return (
     <section className="pt-36 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center min-h-[85vh]">
       
-      {/* قسم التعريف الرئيسي - متوسط في المنتصف */}
+      {/* قسم التعريف الرئيسي */}
       <div className="max-w-4xl flex flex-col items-center">
         
-        {/* الاسم / العنوان الرئيسي (اللوجو الأساسي) */}
-        <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-black leading-tight mb-6">
-          {settings?.hero_title || 'KOHEDROO'}
-        </h1>
+        {/* صورة اللوجو الأساسية في منتصف الشاشة */}
+        <div className="relative w-64 md:w-96 h-20 md:h-28 mb-6 flex items-center justify-center">
+          <Image
+            src="/KOHEDROO.png"
+            alt={settings?.hero_title || 'KOHEDROO'}
+            fill
+            className="object-contain"
+            priority
+          />
+        </div>
 
         {/* نبذة عن الخبرة والمهارات */}
         <p className="text-zinc-700 text-lg md:text-2xl font-normal leading-relaxed tracking-tight max-w-2xl mb-8">
           {settings?.hero_subtitle || 'Visual Designer & Motion Specialist crafting high-impact video content, brand identities, and motion graphics for brands & creators worldwide.'}
         </p>
 
-        {/* أزرار اتخاذ الإجراء (Call to Actions) - متوسّطة */}
+        {/* أزرار اتخاذ الإجراء (Call to Actions) */}
         <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
           <a
             href="#work"
@@ -45,7 +52,7 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* الشريط السفلي: التخصصات والإحصائيات - متوسط تماماً */}
+      {/* الشريط السفلي: التخصصات والإحصائيات */}
       <div className="mt-16 w-full max-w-5xl border-t border-black/10 pt-8 flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-8">
         
         {/* التخصصات ومجالات العمل */}
