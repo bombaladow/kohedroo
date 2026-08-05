@@ -1,28 +1,31 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import WorkGrid from '../components/WorkGrid';
-import Services from '../components/Services';
 import Testimonials from '../components/Testimonials';
-import Packages from '../components/Packages';
 import ContactFooter from '../components/ContactFooter';
 import { useSiteContent } from '../lib/useSiteContent';
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { settings, projects, services, testimonials, packages } = useSiteContent();
+  const { settings, projects, testimonials } = useSiteContent();
+
+  // 🚀 إجبار الصفحة على البدء من الأعلى فور التحميل
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+  }, []);
 
   return (
-    // التغييرات: text-black بدل text-white، و selection بقت خلفية سوداء بكتابة بيضاء
     <div className="bg-transparent text-black min-h-screen selection:bg-black selection:text-white font-sans transition-colors duration-300">
       <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       <Hero settings={settings} />
       <WorkGrid projects={projects} />
-      <Services services={services} />
       <Testimonials testimonials={testimonials} />
-      <Packages packages={packages} />
       <ContactFooter settings={settings} />
     </div>
   );
