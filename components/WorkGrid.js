@@ -1,8 +1,9 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { useRef } from 'react';
+import Link from 'next/link';
 
 function ProjectCard({ project }) {
   const videoRef = useRef(null);
@@ -14,7 +15,6 @@ function ProjectCard({ project }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      // الكارت الأساسي أصبح يحتوي على كل العناصر + الحدود الدائرية والـ hover
       className="group relative cursor-pointer aspect-[16/10] w-full rounded-2xl overflow-hidden border border-black/10 shadow-sm transition-all duration-500 hover:border-black/30 hover:shadow-2xl"
       style={{ backgroundColor: project.bg_color || project.bgColor || '#1a1917' }}
       onMouseEnter={() => hasVideo && videoRef.current?.play().catch(() => {})}
@@ -25,7 +25,6 @@ function ProjectCard({ project }) {
         }
       }}
     >
-      {/* الوسائط (فيديو / صورة) */}
       {hasVideo ? (
         <video
           ref={videoRef}
@@ -45,7 +44,7 @@ function ProjectCard({ project }) {
         />
       )}
 
-      {/* طبقة الظل والمعلومات الداخلية (Hover Overlay) */}
+      {/* طبقة المعاينة الظلية عند الـ Hover */}
       <div 
         className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent 
                    backdrop-blur-[3px] p-6 md:p-8 flex flex-col justify-end
@@ -85,6 +84,17 @@ export default function WorkGrid({ projects }) {
         {projects?.map((project) => (
           <ProjectCard key={project.id} project={project} />
         ))}
+      </div>
+
+      {/* 🚀 الزرار الجديد لمشاهدة جميع الأعمال */}
+      <div className="mt-16 flex justify-center">
+        <Link
+          href="/work" // أو رابط صفحة الأعمال/المعرض عندك مثل /projects
+          className="group inline-flex items-center gap-3 bg-black text-white font-mono text-xs uppercase px-8 py-4 rounded-full font-semibold tracking-wider hover:bg-zinc-800 transition-all shadow-md hover:shadow-xl hover:scale-[1.02]"
+        >
+          <span>View All Projects</span>
+          <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+        </Link>
       </div>
     </section>
   );
