@@ -68,17 +68,17 @@ export default function Hero({ settings }) {
           </div>
         </div>
 
-        {/* الإحصائيات (Stats) */}
+        {/* الإحصائيات (Stats) - تصميم هادئ وأنيق جداً */}
         {stats.length > 0 && (
-          <div className="flex gap-8 md:gap-14 flex-wrap">
+          <div className="flex gap-10 md:gap-16 flex-wrap">
             {stats.map(([value, label], i) => (
-              <div key={i}>
-                <div className="text-3xl md:text-4xl font-extrabold tracking-tighter text-black">
+              <div key={i} className="flex flex-col">
+                <span className="text-3xl md:text-5xl font-extrabold tracking-tighter text-black font-sans leading-none">
                   {value}
-                </div>
-                <div className="text-zinc-600 text-xs font-mono uppercase tracking-widest font-semibold mt-1">
+                </span>
+                <span className="text-zinc-500 text-xs font-mono uppercase tracking-widest font-semibold mt-2">
                   {label}
-                </div>
+                </span>
               </div>
             ))}
           </div>
