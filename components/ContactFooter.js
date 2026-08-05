@@ -1,110 +1,80 @@
 'use client';
 
-import { useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { MessageSquare } from 'lucide-react';
 
 export default function ContactFooter({ settings }) {
-  const [form, setForm] = useState({ name: '', email: '', service_type: '', budget: '', deadline: '', message: '' });
-  const [status, setStatus] = useState('');
-
-  function update(field, value) {
-    setForm((f) => ({ ...f, [field]: value }));
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setStatus('Sending...');
-    const { error } = await supabase.from('inquiries').insert(form);
-    if (error) {
-      setStatus('Something went wrong, please try WhatsApp instead.');
-    } else {
-      setStatus("Thanks — I'll get back to you soon!");
-      setForm({ name: '', email: '', service_type: '', budget: '', deadline: '', message: '' });
-    }
-  }
-
-  const inputStyles = "bg-white/80 backdrop-blur-md border border-black/15 text-black placeholder:text-zinc-500 rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black transition-all shadow-sm";
+  // تجهيز رابط الواتساب من الرقم الموجود في الـ settings
+  const cleanPhoneNumber = settings?.whatsapp?.replace(/[^0-9]/g, '') || '971555780408';
+  const whatsappUrl = `https://wa.me/${cleanPhoneNumber}`;
 
   return (
-    <footer id="contact" className="py-20 px-6 md:px-12 border-t border-black/10 bg-transparent">
-      <div>
-        <span className="text-xs font-mono uppercase text-zinc-600 tracking-widest font-bold">Have a project in mind?</span>
-        <h2 className="text-4xl md:text-7xl font-bold mt-4 tracking-tighter text-black hover:text-zinc-700 transition-colors cursor-pointer">
+    <footer id="contact" className="py-24 px-6 md:px-12 border-t border-black/10 bg-transparent text-center">
+      <div className="max-w-3xl mx-auto flex flex-col items-center">
+        
+        {/* العنوان الفرعي والرئيسي */}
+        <span className="text-xs font-mono uppercase text-zinc-500 tracking-widest font-bold block mb-3">
+          Have a project in mind?
+        </span>
+        
+        <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter text-black mb-8">
           Let&apos;s work together.
         </h2>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12 mt-16">
-        <div>
-          <a href={`mailto:${settings?.contact_email}`} className="font-mono text-lg text-black font-semibold hover:underline block mb-8">
-            {settings?.contact_email}
+        {/* زرار الواتساب المباشر */}
+        <div className="my-6">
+          <a
+            href={whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-3 bg-emerald-600 text-white font-mono text-sm uppercase px-8 py-4 rounded-full font-bold tracking-wider hover:bg-emerald-700 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+          >
+            <MessageSquare size={18} />
+            <span>Chat on WhatsApp</span>
           </a>
-          <div className="flex flex-col gap-4 text-sm">
-            <div><span className="text-zinc-500 font-mono uppercase text-xs tracking-wider block mb-1">WhatsApp</span><span className="text-black font-medium">{settings?.whatsapp}</span></div>
-            <div><span className="text-zinc-500 font-mono uppercase text-xs tracking-wider block mb-1">Based in</span><span className="text-black font-medium">{settings?.location}</span></div>
-          </div>
-          <div className="flex items-center gap-6 text-zinc-700 font-mono text-xs uppercase tracking-wider mt-8 font-semibold">
-            <a href="https://www.instagram.com/kohedroo/" className="hover:text-black transition-colors">Instagram</a>
-            <a href="https://ae.linkedin.com/in/kohedroo" className="hover:text-black transition-colors">LinkedIn</a>
-            <a href="https://www.behance.net/hoossoo88" className="hover:text-black transition-colors">Behance</a>
-            <a href="#" className="hover:text-black transition-colors">Vimeo</a>
-          </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <input
-            required placeholder="Your name" value={form.name}
-            onChange={(e) => update('name', e.target.value)}
-            className={inputStyles}
-          />
-          <input
-            required type="email" placeholder="Your email" value={form.email}
-            onChange={(e) => update('email', e.target.value)}
-            className={inputStyles}
-          />
-          <select
-            value={form.service_type}
-            onChange={(e) => update('service_type', e.target.value)}
-            className={inputStyles}
+        {/* روابط التواصل الاجتماعي تحت الزرار */}
+        <div className="flex flex-wrap justify-center items-center gap-6 md:gap-8 text-zinc-700 font-mono text-xs uppercase tracking-wider mt-10 font-bold">
+          <a 
+            href="https://www.instagram.com/kohedroo/" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:text-black transition-colors"
           >
-            <option value="" className="text-zinc-500">Service needed</option>
-            <option className="text-black">Branding / Logo</option>
-            <option className="text-black">Social Media Design</option>
-            <option className="text-black">Video Editing / Reels</option>
-            <option className="text-black">Ad Video / Motion Graphics</option>
-            <option className="text-black">Something else</option>
-          </select>
-          <select
-            value={form.budget}
-            onChange={(e) => update('budget', e.target.value)}
-            className={inputStyles}
+            Instagram
+          </a>
+          <a 
+            href="https://ae.linkedin.com/in/kohedroo" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:text-black transition-colors"
           >
-            <option value="" className="text-zinc-500">Estimated budget</option>
-            <option className="text-black">Under $500</option>
-            <option className="text-black">$500 – $1,500</option>
-            <option className="text-black">$1,500 – $5,000</option>
-            <option className="text-black">$5,000+</option>
-          </select>
-          <input
-            placeholder="Expected deadline" value={form.deadline}
-            onChange={(e) => update('deadline', e.target.value)}
-            className={inputStyles}
-          />
-          <textarea
-            placeholder="Tell me about your project" value={form.message}
-            onChange={(e) => update('message', e.target.value)}
-            className={`${inputStyles} min-h-[100px]`}
-          />
-          <button type="submit" className="bg-black text-white font-semibold rounded-lg py-3.5 text-sm hover:bg-zinc-800 transition-colors shadow-md">
-            Send Inquiry
-          </button>
-          {status && <p className="text-xs text-zinc-600 font-mono mt-1 font-semibold">{status}</p>}
-        </form>
-      </div>
+            LinkedIn
+          </a>
+          <a 
+            href="https://www.behance.net/hoossoo88" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:text-black transition-colors"
+          >
+            Behance
+          </a>
+          <a 
+            href="#" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="hover:text-black transition-colors"
+          >
+            Vimeo
+          </a>
+        </div>
 
-      <p className="font-mono text-xs text-zinc-500 mt-16 pt-8 border-t border-black/10">
-        © {new Date().getFullYear()} {settings?.hero_title}. All rights reserved.
-      </p>
+        {/* حقوق الملكية وحالة الموقع */}
+        <p className="font-mono text-xs text-zinc-400 mt-16 pt-8 border-t border-black/10 w-full text-center">
+          © {new Date().getFullYear()} {settings?.hero_title || 'KOHEDROO'}. All rights reserved.
+        </p>
+
+      </div>
     </footer>
   );
 }

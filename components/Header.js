@@ -9,8 +9,8 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
 
   useEffect(() => {
     const handleScroll = () => {
-      // بيتفعل التأثير بعد سكرول 40 بكسل
-      if (window.scrollY > 40) {
+      // بيظهر اللوجو في الهيدر لما تنزل 100 بكسل تحت (بعد اللوجو الكبير)
+      if (window.scrollY > 100) {
         setScrolled(true);
       } else {
         setScrolled(false);
@@ -26,15 +26,20 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
       <header className="fixed top-0 left-0 w-full z-50 p-4 md:p-6 pointer-events-none transition-all duration-300">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
 
-          {/* ================= DESKTOP HEADER (KOTO STYLE) ================= */}
-          <div className="hidden md:flex items-center pointer-events-auto">
+          {/* ================= DESKTOP HEADER ================= */}
+          <div className="hidden md:flex items-center pointer-events-auto mx-auto">
             <div 
               className={`flex items-center bg-black/80 backdrop-blur-md border border-zinc-800/80 rounded-full transition-all duration-500 ease-in-out shadow-2xl ${
-                scrolled ? 'px-3 py-1.5 gap-2' : 'px-6 py-3 gap-8'
+                scrolled ? 'px-6 py-2.5 gap-6' : 'px-8 py-3.5 gap-8'
               }`}
             >
-              {/* اللوجو */}
-              <a href="#" className="relative h-6 w-28 flex items-center transition-all duration-300 hover:opacity-80">
+              {/* اللوجو - بيظهر بسلاسة لما تسكرول لتحت */}
+              <a 
+                href="#" 
+                className={`relative h-6 transition-all duration-500 overflow-hidden flex items-center ${
+                  scrolled ? 'w-28 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+                }`}
+              >
                 <Image
                   src="/KOHEDROO.png"
                   alt="KOHEDROO"
@@ -44,29 +49,13 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
                 />
               </a>
 
-              {/* القائمة التي تطوى أفقياً عند السكرول */}
-              <nav 
-                className={`flex items-center transition-all duration-500 ease-in-out overflow-hidden font-mono text-xs uppercase tracking-widest text-zinc-400 ${
-                  scrolled 
-                    ? 'max-w-0 opacity-0 pointer-events-none gap-0' 
-                    : 'max-w-md opacity-100 gap-8'
-                }`}
-              >
+              {/* القائمة الرئيسية */}
+              <nav className="flex items-center gap-8 font-mono text-xs uppercase tracking-widest text-zinc-400">
                 <a href="#work" className="hover:text-white transition-colors whitespace-nowrap">Work</a>
                 <a href="#about" className="hover:text-white transition-colors whitespace-nowrap">About</a>
                 <a href="#services" className="hover:text-white transition-colors whitespace-nowrap">Services</a>
                 <a href="#contact" className="hover:text-white transition-colors whitespace-nowrap">Contact</a>
               </nav>
-
-              {/* زرار القائمة المصغر اللي بيظهر لما السكرول يشتغل */}
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className={`font-mono text-xs font-bold text-white uppercase tracking-widest transition-all duration-300 hover:text-zinc-300 ${
-                  scrolled ? 'block px-2 py-1' : 'hidden'
-                }`}
-              >
-                MENU +
-              </button>
             </div>
           </div>
 
@@ -77,10 +66,13 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
                 scrolled ? 'px-4 py-2' : 'px-5 py-3'
               }`}
             >
-              {/* الصورة واللوجو ينكمشان بشكل متناسق */}
-              <a href="#" className={`relative transition-all duration-300 flex items-center ${
-                scrolled ? 'h-5 w-20' : 'h-6 w-28'
-              }`}>
+              {/* اللوجو على الموبايل بيظهر مع السكرول */}
+              <a 
+                href="#" 
+                className={`relative transition-all duration-300 flex items-center ${
+                  scrolled ? 'h-5 w-20 opacity-100' : 'h-5 w-0 opacity-0'
+                }`}
+              >
                 <Image
                   src="/KOHEDROO.png"
                   alt="KOHEDROO"
@@ -92,7 +84,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
 
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-zinc-300 hover:text-white transition-colors"
+                className="text-zinc-300 hover:text-white transition-colors ml-auto"
               >
                 {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
@@ -104,7 +96,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
 
       {/* ================= MOBILE DRAWER MENU ================= */}
       {isMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col justify-center px-8 space-y-8 text-2xl font-mono uppercase font-bold text-zinc-300">
+        <div className="fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center space-y-8 text-2xl font-mono uppercase font-bold text-zinc-300 pointer-events-auto">
           <a href="#work" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>Work</a>
           <a href="#about" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>About</a>
           <a href="#services" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>Services</a>
