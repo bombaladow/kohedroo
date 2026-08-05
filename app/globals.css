@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #000000;
-  --foreground: #ededed;
+  --background: #ffffff;
+  --foreground: #000000;
 }
 
 @theme inline {
@@ -13,13 +13,34 @@
 }
 
 body {
-  background-color: #222222;
+  background-color: #ffffff !important;
+  /* صورة الـ Pattern باللون الأسود الخفيف كالظل */
+  background-image: url("/images/kohedroo-pattern.webp") !important;
+  background-repeat: repeat !important;
+  background-size: 600px auto !important;
+  background-position: top center !important;
+  background-attachment: scroll !important;
+  
+  /* فلتر لقلب لون الـ Pattern للأسود مع تقليل الشفافية لتبدو كالظل في الخلفية */
+  filter: none; 
+  color: #000000 !important;
+  font-family: var(--font-sans), Arial, sans-serif;
+}
+
+/* في حال كانت صورة الـ Pattern بيضاء، نعكس لونها للأسود ونخففها */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background-image: url("/images/kohedroo-pattern.webp");
   background-repeat: repeat;
-  background-size: 800px auto; /* صغرتها لـ 800px عشان الرموز تكون بالحجم المتناسق والمظبوط */
-  background-position: center top;
-  background-attachment: scroll; /* عشان تتكرر مع السكرول الطبيعي وما تتثبتش */
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-  min-height: 100vh;
+  background-size: 600px auto;
+  background-position: top center;
+  pointer-events: none;
+  z-index: -1;
+  /* جعل الصورة سوداء وبشفافية خفيفة كالظل (10% إلى 15%) */
+  filter: invert(1) opacity(0.12);
 }

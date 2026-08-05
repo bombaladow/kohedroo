@@ -15,7 +15,8 @@ export default function Home() {
   const { settings, projects, services, testimonials, packages } = useSiteContent();
 
   return (
-    <div className="bg-transparent text-white min-h-screen selection:bg-white selection:text-black font-sans">
+    // التغييرات: text-black بدل text-white، و selection بقت خلفية سوداء بكتابة بيضاء
+    <div className="bg-transparent text-black min-h-screen selection:bg-black selection:text-white font-sans transition-colors duration-300">
       <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       <Hero settings={settings} />
       <WorkGrid projects={projects} />
