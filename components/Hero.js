@@ -10,7 +10,7 @@ export default function Hero({ settings }) {
     ['UAE & EG', 'Key Markets']
   ];
 
-  // قائمة اللوجوهات
+  // قائمة الماركات واللوجوهات كاملة
   const brands = [
     { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png' },
     { name: 'Joyalukkas', logo: '/brands/joyalukkas.png' },
@@ -18,12 +18,27 @@ export default function Hero({ settings }) {
     { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png' },
     { name: 'Al Ain Water', logo: '/brands/al-ain-water.png' },
     { name: 'OnPlan Group', logo: '/brands/onplan.png' },
+    { name: 'cocoa-milts', logo: '/brands/COCOA-MELTS .png' },
+    { name: 'Damas-Rose', logo: '/brands/Damas-Rose.png' },
+    { name: 'EHSAS', logo: '/brands/EHSAS.png' },
+    { name: 'Faridah', logo: '/brands/Faridah.png' },
+    { name: 'nakai', logo: '/brands/nakai.png' },
+    { name: 'jkosmec', logo: '/brands/0.png' },
+    { name: 'hemani', logo: '/brands/22.png' },
+    { name: 'tamra', logo: '/brands/tamra.png' }, // 👈 ضفنا الفاصلة هنا
+    { name: 'dayali', logo: '/brands/dayali.png' },
+    { name: 'makkaj', logo: '/brands/makkaj.png' },
+    { name: 'world-bazzar', logo: '/brands/world-bazzar.png' },
+    { name: 'hill-crest', logo: '/brands/hill-crest.png' },
   ];
 
+  // بنكرر المصفوفة عشان الأنيماشن يلف بشكل لا نهائي وناعم جداً من غير ما يقطع
+  const duplicatedBrands = [...brands, ...brands, ...brands];
+
   return (
-    <section className="pt-32 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center">
+    <section className="pt-32 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center overflow-hidden">
       
-      {/* 1. قسم اللوجو البايو والزرار */}
+      {/* 1. قسم اللوجو والبايو والأزرار */}
       <div className="max-w-4xl flex flex-col items-center">
         
         {/* اللوجو الرئيسي */}
@@ -62,27 +77,29 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* 2. شريط لوجوهات الشركات - تكبير وتنظيم المقاسات */}
-      <div className="w-full max-w-6xl border-t border-black/10 pt-10 mb-12">
+      {/* 2. شريط اللوجوهات المتحرك أفقياً (Infinite Logo Marquee) */}
+      <div className="w-full max-w-7xl border-t border-black/10 pt-10 mb-12 overflow-hidden">
         <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-8 font-semibold">
           Brands & Clients Worked With
         </span>
         
-        {/* حطينا اللوجوهات في Grid عشان تترتب صح والمقاس يبان كبير وواضح */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 items-center justify-items-center">
-          {brands.map((brand, i) => (
-            <div 
-              key={i} 
-              className="relative h-20 md:h-24 w-36 md:w-44 hover:scale-110 transition-transform duration-300 flex items-center justify-center p-2"
-            >
-              <Image
-                src={brand.logo}
-                alt={brand.name}
-                fill
-                className="object-contain"
-              />
-            </div>
-          ))}
+        {/* الحاوية الخارجية مع تأثير التلاشي (Gradient Fade) */}
+        <div className="relative w-full overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
+          <div className="flex w-max items-center gap-12 md:gap-20 animate-marquee hover:[animation-play-state:paused]">
+            {duplicatedBrands.map((brand, i) => (
+              <div 
+                key={i} 
+                className="relative h-16 md:h-20 w-36 md:w-44 flex-shrink-0 transition-transform duration-300 hover:scale-110"
+              >
+                <Image
+                  src={brand.logo}
+                  alt={brand.name}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
