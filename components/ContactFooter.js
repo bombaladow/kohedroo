@@ -59,14 +59,7 @@ export default function ContactFooter({ settings }) {
           >
             Behance
           </a>
-          <a 
-            href="#" 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="hover:text-black transition-colors"
-          >
-            Vimeo
-          </a>
+         
         </div>
 
         {/* حقوق الملكية وحالة الموقع */}
