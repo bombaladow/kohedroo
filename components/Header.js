@@ -49,11 +49,10 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
                 />
               </a>
 
-              {/* القائمة الرئيسية */}
+              {/* القائمة الرئيسية (بدون Services) */}
               <nav className="flex items-center gap-8 font-mono text-xs uppercase tracking-widest text-zinc-400">
                 <a href="#work" className="hover:text-white transition-colors whitespace-nowrap">Work</a>
                 <a href="#about" className="hover:text-white transition-colors whitespace-nowrap">About</a>
-                <a href="#services" className="hover:text-white transition-colors whitespace-nowrap">Services</a>
                 <a href="#contact" className="hover:text-white transition-colors whitespace-nowrap">Contact</a>
               </nav>
             </div>
@@ -99,7 +98,6 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
         <div className="fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center space-y-8 text-2xl font-mono uppercase font-bold text-zinc-300 pointer-events-auto">
           <a href="#work" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>Work</a>
           <a href="#about" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>About</a>
-          <a href="#services" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>Services</a>
           <a href="#contact" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>Contact</a>
         </div>
       )}
