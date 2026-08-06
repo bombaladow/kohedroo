@@ -5,18 +5,28 @@ import { ArrowDown, MessageSquare } from 'lucide-react';
 
 export default function Hero({ settings }) {
   const stats = [
-    [settings?.stat1_value, settings?.stat1_label],
-    [settings?.stat2_value, settings?.stat2_label],
-    [settings?.stat3_value, settings?.stat3_label]
-  ].filter(([v]) => v);
+    ['13+', 'Years Experience'],
+    ['100+', 'AI Commercial Videos'],
+    ['UAE & EG', 'Key Markets']
+  ];
+
+  // قائمة اللوجوهات والروابط الخاصة بها
+  const brands = [
+    { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png' },
+    { name: 'Joyalukkas', logo: '/brands/joyalukkas.png' },
+    { name: 'Giordano', logo: '/brands/giordano.png' },
+    { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png' },
+    { name: 'Al Ain Water', logo: '/brands/al-ain-water.png' },
+    { name: 'OnPlan Group', logo: '/brands/onplan.png' },
+  ];
 
   return (
     <section className="pt-36 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center min-h-[85vh]">
       
-      {/* قسم التعريف الرئيسي */}
+      {/* 1. قسم اللوجو والبايو والأزرار */}
       <div className="max-w-4xl flex flex-col items-center">
         
-        {/* صورة اللوجو الأساسية في منتصف الشاشة */}
+        {/* صورة اللوجو الأساسية */}
         <div className="relative w-64 md:w-96 h-20 md:h-28 mb-6 flex items-center justify-center">
           <Image
             src="/KOHEDROO.png"
@@ -27,13 +37,13 @@ export default function Hero({ settings }) {
           />
         </div>
 
-        {/* نبذة عن الخبرة والمهارات */}
-        <p className="text-zinc-700 text-lg md:text-2xl font-normal leading-relaxed tracking-tight max-w-2xl mb-8">
-          {settings?.hero_subtitle || 'Visual Designer & Motion Specialist crafting high-impact video content, brand identities, and motion graphics for brands & creators worldwide.'}
+        {/* النبذة المختصرة */}
+        <p className="text-zinc-700 text-lg md:text-2xl font-normal leading-relaxed tracking-tight max-w-3xl mb-8">
+          {settings?.hero_subtitle || 'Art Director & AI Creative Lead with 13+ years driving visual storytelling, AI production, and premium commercial branding across Dubai & Egypt.'}
         </p>
 
-        {/* أزرار اتخاذ الإجراء (Call to Actions) */}
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+        {/* الأزرار */}
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-2 mb-12">
           <a
             href="#work"
             className="group inline-flex items-center gap-3 bg-black text-white font-mono text-xs uppercase px-7 py-3.5 rounded-full font-semibold tracking-wider hover:bg-zinc-800 transition-all shadow-md hover:shadow-xl hover:scale-[1.02]"
@@ -52,40 +62,43 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* الشريط السفلي: التخصصات والإحصائيات */}
-      <div className="mt-16 w-full max-w-5xl border-t border-black/10 pt-8 flex flex-col md:flex-row justify-between items-center text-center md:text-left gap-8">
+      {/* 2. شريط لوجوهات الشركات (Logos Bar) */}
+      <div className="w-full max-w-5xl border-t border-black/10 pt-8 mb-10">
+        <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-6 font-semibold">
+          Brands & Clients Worked With
+        </span>
         
-        {/* التخصصات ومجالات العمل */}
-        <div className="flex flex-col items-center md:items-start">
-          <span className="text-xs font-mono uppercase text-zinc-500 tracking-widest block mb-2 font-bold">
-            Core Expertise
-          </span>
-          <div className="font-mono text-xs md:text-sm text-black font-bold uppercase tracking-wider leading-relaxed">
-            {settings?.hero_tagline?.split('•').map((part, i, arr) => (
-              <span key={i}>
-                {part.trim()}{i < arr.length - 1 ? ' • ' : ''}
-              </span>
-            )) || 'Motion Graphics • Video Editing • Branding'}
-          </div>
+        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-14 opacity-80 hover:opacity-100 transition-opacity">
+          {brands.map((brand, i) => (
+            <div 
+              key={i} 
+              className="relative h-8 md:h-12 w-24 md:w-32 grayscale contrast-200 hover:grayscale-0 hover:scale-105 transition-all duration-300"
+            >
+              <Image
+                src={brand.logo}
+                alt={brand.name}
+                fill
+                className="object-contain"
+              />
+            </div>
+          ))}
         </div>
-
-        {/* الإحصائيات (Stats) */}
-        {stats.length > 0 && (
-          <div className="flex justify-center gap-10 md:gap-16 flex-wrap">
-            {stats.map(([value, label], i) => (
-              <div key={i} className="flex flex-col items-center md:items-start">
-                <span className="text-3xl md:text-4xl font-extrabold tracking-tighter text-black font-sans leading-none">
-                  {value}
-                </span>
-                <span className="text-zinc-500 text-xs font-mono uppercase tracking-widest font-semibold mt-2">
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
       </div>
+
+      {/* 3. الإحصائيات الحديثة */}
+      <div className="w-full max-w-4xl border-t border-black/10 pt-8 flex justify-center gap-10 md:gap-20 flex-wrap">
+        {stats.map(([value, label], i) => (
+          <div key={i} className="flex flex-col items-center">
+            <span className="text-3xl md:text-4xl font-extrabold tracking-tighter text-black font-sans leading-none">
+              {value}
+            </span>
+            <span className="text-zinc-500 text-xs font-mono uppercase tracking-widest font-semibold mt-2">
+              {label}
+            </span>
+          </div>
+        ))}
+      </div>
+
     </section>
   );
 }
