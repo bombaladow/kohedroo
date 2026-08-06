@@ -89,14 +89,14 @@ export default function Hero({ settings }) {
             {duplicatedBrands.map((brand, i) => (
               <div 
                 key={i} 
-                /* 🔹 كبرنا الحجم من h-12/16 إلى h-20/28 و w-32/44 إلى w-44/60 */
                 className="relative h-20 md:h-28 w-44 md:w-60 flex-shrink-0 flex items-center justify-center px-3 transition-transform duration-300 hover:scale-110"
               >
                 <Image
                   src={brand.logo}
                   alt={brand.name}
                   fill
-                  className="object-contain filter invert hue-rotate-180 contrast-125 mix-blend-multiply"
+                  /* 🔹 عرض الصور بألوانها وشكلها الطبيعي بدون أي فلاتر */
+                  className="object-contain"
                 />
               </div>
             ))}
