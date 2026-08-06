@@ -10,7 +10,7 @@ export default function Hero({ settings }) {
     ['UAE & EG', 'Key Markets']
   ];
 
-  // قائمة اللوجوهات والروابط الخاصة بها
+  // قائمة اللوجوهات
   const brands = [
     { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png' },
     { name: 'Joyalukkas', logo: '/brands/joyalukkas.png' },
@@ -21,13 +21,13 @@ export default function Hero({ settings }) {
   ];
 
   return (
-    <section className="pt-36 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center min-h-[85vh]">
+    <section className="pt-32 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center">
       
-      {/* 1. قسم اللوجو والبايو والأزرار */}
+      {/* 1. قسم اللوجو البايو والزرار */}
       <div className="max-w-4xl flex flex-col items-center">
         
-        {/* صورة اللوجو الأساسية */}
-        <div className="relative w-64 md:w-96 h-20 md:h-28 mb-6 flex items-center justify-center">
+        {/* اللوجو الرئيسي */}
+        <div className="relative w-72 md:w-96 h-24 md:h-32 mb-6 flex items-center justify-center">
           <Image
             src="/KOHEDROO.png"
             alt={settings?.hero_title || 'KOHEDROO'}
@@ -43,10 +43,10 @@ export default function Hero({ settings }) {
         </p>
 
         {/* الأزرار */}
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-2 mb-12">
+        <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
           <a
             href="#work"
-            className="group inline-flex items-center gap-3 bg-black text-white font-mono text-xs uppercase px-7 py-3.5 rounded-full font-semibold tracking-wider hover:bg-zinc-800 transition-all shadow-md hover:shadow-xl hover:scale-[1.02]"
+            className="group inline-flex items-center gap-3 bg-black text-white font-mono text-xs uppercase px-7 py-3.5 rounded-full font-semibold tracking-wider hover:bg-zinc-800 transition-all shadow-md"
           >
             <span>Explore Projects</span>
             <ArrowDown size={15} className="group-hover:translate-y-1 transition-transform" />
@@ -62,17 +62,18 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* 2. شريط لوجوهات الشركات (Logos Bar) */}
-      <div className="w-full max-w-5xl border-t border-black/10 pt-8 mb-10">
-        <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-6 font-semibold">
+      {/* 2. شريط لوجوهات الشركات - تكبير وتنظيم المقاسات */}
+      <div className="w-full max-w-6xl border-t border-black/10 pt-10 mb-12">
+        <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-8 font-semibold">
           Brands & Clients Worked With
         </span>
         
-        <div className="flex flex-wrap justify-center items-center gap-8 md:gap-14 opacity-80 hover:opacity-100 transition-opacity">
+        {/* حطينا اللوجوهات في Grid عشان تترتب صح والمقاس يبان كبير وواضح */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-8 items-center justify-items-center">
           {brands.map((brand, i) => (
             <div 
               key={i} 
-              className="relative h-8 md:h-12 w-24 md:w-32 grayscale contrast-200 hover:grayscale-0 hover:scale-105 transition-all duration-300"
+              className="relative h-20 md:h-24 w-36 md:w-44 hover:scale-110 transition-transform duration-300 flex items-center justify-center p-2"
             >
               <Image
                 src={brand.logo}
@@ -85,11 +86,11 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* 3. الإحصائيات الحديثة */}
-      <div className="w-full max-w-4xl border-t border-black/10 pt-8 flex justify-center gap-10 md:gap-20 flex-wrap">
+      {/* 3. الإحصائيات والأرقام */}
+      <div className="w-full max-w-4xl border-t border-black/10 pt-10 flex justify-center gap-12 md:gap-24 flex-wrap">
         {stats.map(([value, label], i) => (
           <div key={i} className="flex flex-col items-center">
-            <span className="text-3xl md:text-4xl font-extrabold tracking-tighter text-black font-sans leading-none">
+            <span className="text-3xl md:text-5xl font-extrabold tracking-tighter text-black font-sans leading-none">
               {value}
             </span>
             <span className="text-zinc-500 text-xs font-mono uppercase tracking-widest font-semibold mt-2">
