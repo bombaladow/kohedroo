@@ -18,21 +18,21 @@ export default function Hero({ settings }) {
     { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png' },
     { name: 'Al Ain Water', logo: '/brands/al-ain-water.png' },
     { name: 'OnPlan Group', logo: '/brands/onplan.png' },
-    { name: 'cocoa-milts', logo: '/brands/COCOA-MELTS .png' },
+    { name: 'cocoa-milts', logo: '/brands/COCOA-MELTS.png' }, // 👈 شيلنا المسافة الزيادة من اسم الملف
     { name: 'Damas-Rose', logo: '/brands/Damas-Rose.png' },
     { name: 'EHSAS', logo: '/brands/EHSAS.png' },
     { name: 'Faridah', logo: '/brands/Faridah.png' },
     { name: 'nakai', logo: '/brands/nakai.png' },
     { name: 'jkosmec', logo: '/brands/0.png' },
     { name: 'hemani', logo: '/brands/22.png' },
-    { name: 'tamra', logo: '/brands/tamra.png' }, // 👈 ضفنا الفاصلة هنا
+    { name: 'tamra', logo: '/brands/tamra.png' },
     { name: 'dayali', logo: '/brands/dayali.png' },
     { name: 'makkaj', logo: '/brands/makkaj.png' },
     { name: 'world-bazzar', logo: '/brands/world-bazzar.png' },
     { name: 'hill-crest', logo: '/brands/hill-crest.png' },
   ];
 
-  // بنكرر المصفوفة عشان الأنيماشن يلف بشكل لا نهائي وناعم جداً من غير ما يقطع
+  // تكرار المصفوفة لحركة سلسة ولا نهائية
   const duplicatedBrands = [...brands, ...brands, ...brands];
 
   return (
@@ -77,25 +77,27 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* 2. شريط اللوجوهات المتحرك أفقياً (Infinite Logo Marquee) */}
+      {/* 2. شريط اللوجوهات المتحرك أفقياً */}
       <div className="w-full max-w-7xl border-t border-black/10 pt-10 mb-12 overflow-hidden">
         <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-8 font-semibold">
           Brands & Clients Worked With
         </span>
         
-        {/* الحاوية الخارجية مع تأثير التلاشي (Gradient Fade) */}
-        <div className="relative w-full overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_128px,_black_calc(100%-128px),transparent_100%)]">
-          <div className="flex w-max items-center gap-12 md:gap-20 animate-marquee hover:[animation-play-state:paused]">
+        {/* الحاوية الخارجية مع التدرج */}
+        <div className="relative w-full overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_64px,_black_calc(100%-64px),transparent_100%)]">
+          <div className="flex w-max items-center gap-14 md:gap-24 animate-marquee hover:[animation-play-state:paused] py-4">
             {duplicatedBrands.map((brand, i) => (
               <div 
                 key={i} 
-                className="relative h-16 md:h-20 w-36 md:w-44 flex-shrink-0 transition-transform duration-300 hover:scale-110"
+                /* 🔹 توحيد المساحة والمرونة للوجوهات المربعة والعريضة */
+                className="relative h-12 md:h-16 w-32 md:w-44 flex-shrink-0 flex items-center justify-center px-2 transition-transform duration-300 hover:scale-110"
               >
                 <Image
                   src={brand.logo}
                   alt={brand.name}
                   fill
-                  className="object-contain"
+                  /* 🔹 تحسين التباين ليظهر اللوجوهات الذهبية والفاتحة بنظافة ووضوح ممتاز */
+                  className="object-contain contrast-125 mix-blend-multiply"
                 />
               </div>
             ))}
