@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
+import AboutSection from '../components/AboutSection';
 import WorkGrid from '../components/WorkGrid';
 import Testimonials from '../components/Testimonials';
 import ContactFooter from '../components/ContactFooter';
@@ -24,6 +25,7 @@ export default function Home() {
     <div className="bg-transparent text-black min-h-screen selection:bg-black selection:text-white font-sans transition-colors duration-300">
       <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       <Hero settings={settings} />
+      <AboutSection /> {/* 👈 ضفنا السطر ده هنا */}
       <WorkGrid projects={projects} />
       <Testimonials testimonials={testimonials} />
       <ContactFooter settings={settings} />
