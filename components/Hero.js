@@ -18,7 +18,7 @@ export default function Hero({ settings }) {
     { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png' },
     { name: 'Al Ain Water', logo: '/brands/al-ain-water.png' },
     { name: 'OnPlan Group', logo: '/brands/onplan.png' },
-    { name: 'cocoa-milts', logo: '/brands/COCOA-MELTS.png' }, // 👈 شيلنا المسافة الزيادة من اسم الملف
+    { name: 'cocoa-milts', logo: '/brands/COCOA-MELTS.png' },
     { name: 'Damas-Rose', logo: '/brands/Damas-Rose.png' },
     { name: 'EHSAS', logo: '/brands/EHSAS.png' },
     { name: 'Faridah', logo: '/brands/Faridah.png' },
@@ -85,19 +85,18 @@ export default function Hero({ settings }) {
         
         {/* الحاوية الخارجية مع التدرج */}
         <div className="relative w-full overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_64px,_black_calc(100%-64px),transparent_100%)]">
-          <div className="flex w-max items-center gap-14 md:gap-24 animate-marquee hover:[animation-play-state:paused] py-4">
+          <div className="flex w-max items-center gap-16 md:gap-28 animate-marquee hover:[animation-play-state:paused] py-6">
             {duplicatedBrands.map((brand, i) => (
               <div 
                 key={i} 
-                /* 🔹 توحيد المساحة والمرونة للوجوهات المربعة والعريضة */
-                className="relative h-12 md:h-16 w-32 md:w-44 flex-shrink-0 flex items-center justify-center px-2 transition-transform duration-300 hover:scale-110"
+                /* 🔹 كبرنا الحجم من h-12/16 إلى h-20/28 و w-32/44 إلى w-44/60 */
+                className="relative h-20 md:h-28 w-44 md:w-60 flex-shrink-0 flex items-center justify-center px-3 transition-transform duration-300 hover:scale-110"
               >
                 <Image
                   src={brand.logo}
                   alt={brand.name}
                   fill
-                  /* 🔹 تحسين التباين ليظهر اللوجوهات الذهبية والفاتحة بنظافة ووضوح ممتاز */
-                  className="object-contain contrast-125 mix-blend-multiply"
+                  className="object-contain filter invert hue-rotate-180 contrast-125 mix-blend-multiply"
                 />
               </div>
             ))}
