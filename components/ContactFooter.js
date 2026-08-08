@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageSquare, Instagram, Linkedin } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
 
 export default function ContactFooter({ settings }) {
   // تجهيز رابط الواتساب من الرقم الموجود في الـ settings
@@ -33,7 +33,7 @@ export default function ContactFooter({ settings }) {
           </a>
         </div>
 
-        {/* روابط التواصل الاجتماعي تحت الزرار (أيقونات بدلاً من الكلمات) */}
+        {/* روابط التواصل الاجتماعي (SVG مباشرة بدون أخطاء Build) */}
         <div className="flex items-center justify-center gap-6 md:gap-8 mt-10">
           
           {/* Instagram */}
@@ -44,7 +44,16 @@ export default function ContactFooter({ settings }) {
             aria-label="Instagram"
             className="text-zinc-700 hover:text-black hover:scale-110 transition-all duration-300 p-2 rounded-full hover:bg-black/5"
           >
-            <Instagram className="w-6 h-6 stroke-[2]" />
+            <svg
+              className="w-6 h-6 fill-none stroke-current stroke-2"
+              viewBox="0 0 24 24"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
           </a>
 
           {/* LinkedIn */}
@@ -55,7 +64,16 @@ export default function ContactFooter({ settings }) {
             aria-label="LinkedIn"
             className="text-zinc-700 hover:text-black hover:scale-110 transition-all duration-300 p-2 rounded-full hover:bg-black/5"
           >
-            <Linkedin className="w-6 h-6 stroke-[2]" />
+            <svg
+              className="w-6 h-6 fill-none stroke-current stroke-2"
+              viewBox="0 0 24 24"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+              <rect x="2" y="9" width="4" height="12"></rect>
+              <circle cx="4" cy="4" r="2"></circle>
+            </svg>
           </a>
 
           {/* Behance */}
@@ -69,7 +87,6 @@ export default function ContactFooter({ settings }) {
             <svg
               className="w-6 h-6 fill-current"
               viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
             >
               <path d="M22 7h-7v-2h7v2zm1.726 10c0 2.174-1.282 3.868-3.793 3.868-2.677 0-4.381-1.815-4.381-4.704 0-2.883 1.83-4.832 4.312-4.832 2.766 0 3.862 2.155 3.862 4.417 0 .373-.024.819-.059 1.251h-5.975c.094 1.455.972 2.222 2.188 2.222 1.012 0 1.637-.478 1.957-1.222h1.889zm-5.834-3.136h3.843c-.078-1.071-.722-1.782-1.874-1.782-1.168 0-1.868.74-1.969 1.782zm-10.892 5.136h-7v-13h7.288c2.251 0 3.712 1.001 3.712 2.803 0 1.189-.625 2.115-1.637 2.585 1.282.41 2.052 1.503 2.052 2.981 0 2.22-1.748 4.631-4.415 4.631zm-4.859-7.854h2.511c1.139 0 1.815-.521 1.815-1.393 0-.895-.676-1.352-1.815-1.352h-2.511v2.745zm0 5.727h2.71c1.282 0 2.012-.628 2.012-1.554 0-.972-.73-1.579-2.012-1.579h-2.71v3.133z" />
             </svg>
@@ -77,7 +94,7 @@ export default function ContactFooter({ settings }) {
 
         </div>
 
-        {/* حقوق الملكية وحالة الموقع */}
+        {/* حقوق الملكية */}
         <p className="font-mono text-xs text-zinc-400 mt-16 pt-8 border-t border-black/10 w-full text-center">
           © {new Date().getFullYear()} {settings?.hero_title || 'KOHEDROO'}. All rights reserved.
         </p>
