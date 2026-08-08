@@ -17,7 +17,7 @@ export default function ContactFooter({ settings }) {
         </span>
         
         <h2 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter text-black mb-8">
-          Let&apos;s work together.
+          {"Let's work together."}
         </h2>
 
         {/* زرار الواتساب المباشر */}
