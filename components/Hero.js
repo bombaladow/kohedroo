@@ -63,27 +63,20 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* 2. قسم اللوجوهات الموزونة واضحة الحجم */}
+      {/* 2. قسم اللوجوهات — نفس الارتفاع بالظبط لكل اللوجوهات، والعرض بيتحسب لوحده */}
       <div className="w-full max-w-6xl border-t border-black/10 pt-10 mb-16">
         <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-10 font-semibold">
           Brands & Clients Worked With
         </span>
-        
-        {/* شبكة لوجوهات بحجم بارز ومريح للعين */}
-        <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16 py-2">
+
+        <div className="flex flex-wrap items-center justify-center gap-x-14 gap-y-10 md:gap-x-20 py-2">
           {brands.map((brand, i) => (
-            <div 
-              key={i} 
-              /* 🔹 تكبير الارتفاع والعرض ليكون متناسقاً جداً مع السكشن */
-              className="relative h-14 md:h-20 w-40 md:w-56 flex items-center justify-center transition-transform duration-300 hover:scale-105"
-            >
-              <Image
-                src={brand.logo}
-                alt={brand.name}
-                fill
-                className="object-contain"
-              />
-            </div>
+            <img
+              key={i}
+              src={brand.logo}
+              alt={brand.name}
+              className="h-8 md:h-11 w-auto object-contain grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all duration-300"
+            />
           ))}
         </div>
       </div>
