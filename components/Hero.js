@@ -14,9 +14,11 @@ export default function Hero({ settings }) {
   const brands = [
     { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png' },
     { name: 'Joyalukkas', logo: '/brands/joyalukkas.png' },
+    { name: 'Giordano', logo: '/brands/giordano.png' },
     { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png' },
     { name: 'Al Ain Water', logo: '/brands/al-ain-water.png' },
     { name: 'OnPlan Group', logo: '/brands/onplan.png' },
+    { name: 'nakai', logo: '/brands/nakai.png' },
   ];
 
   return (
@@ -73,7 +75,7 @@ export default function Hero({ settings }) {
               key={i}
               src={brand.logo}
               alt={brand.name}
-              className="h-12 md:h-20 w-auto object-contain transition-transform duration-300 hover:scale-110"
+              className="h-16 md:h-20 max-w-[130px] md:max-w-[180px] w-auto object-contain transition-transform duration-300 hover:scale-110"
             />
           ))}
         </div>
