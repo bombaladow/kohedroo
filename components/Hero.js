@@ -10,7 +10,7 @@ export default function Hero({ settings }) {
     ['UAE & EG', 'Key Markets']
   ];
 
-  // قائمة الماركات واللوجوهات كاملة
+  // 🔹 اختصار القائمة للعلامات التجارية المهمة فقط
   const brands = [
     { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png' },
     { name: 'Joyalukkas', logo: '/brands/joyalukkas.png' },
@@ -18,22 +18,10 @@ export default function Hero({ settings }) {
     { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png' },
     { name: 'Al Ain Water', logo: '/brands/al-ain-water.png' },
     { name: 'OnPlan Group', logo: '/brands/onplan.png' },
-    { name: 'cocoa-milts', logo: '/brands/COCOA-MELTS.png' },
     { name: 'Damas-Rose', logo: '/brands/Damas-Rose.png' },
     { name: 'EHSAS', logo: '/brands/EHSAS.png' },
-    { name: 'Faridah', logo: '/brands/Faridah.png' },
     { name: 'nakai', logo: '/brands/nakai.png' },
-    { name: 'jkosmec', logo: '/brands/0.png' },
-    { name: 'hemani', logo: '/brands/22.png' },
-    { name: 'tamra', logo: '/brands/tamra.png' },
-    { name: 'dayali', logo: '/brands/dayali.png' },
-    { name: 'makkaj', logo: '/brands/makkaj.png' },
-    { name: 'world-bazzar', logo: '/brands/world-bazzar.png' },
-    { name: 'hill-crest', logo: '/brands/hill-crest.png' },
   ];
-
-  // تكرار المصفوفة لحركة سلسة ولا نهائية
-  const duplicatedBrands = [...brands, ...brands, ...brands];
 
   return (
     <section className="pt-32 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center overflow-hidden">
@@ -77,30 +65,27 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* 2. شريط اللوجوهات المتحرك أفقياً */}
-      <div className="w-full max-w-7xl border-t border-black/10 pt-10 mb-12 overflow-hidden">
+      {/* 2. قسم اللوجوهات الثابت (بدون حركة) */}
+      <div className="w-full max-w-7xl border-t border-black/10 pt-10 mb-12">
         <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-8 font-semibold">
           Brands & Clients Worked With
         </span>
         
-        {/* الحاوية الخارجية مع التدرج */}
-        <div className="relative w-full overflow-hidden [mask-image:_linear-gradient(to_right,transparent_0,_black_64px,_black_calc(100%-64px),transparent_100%)]">
-          <div className="flex w-max items-center gap-16 md:gap-28 animate-marquee hover:[animation-play-state:paused] py-6">
-            {duplicatedBrands.map((brand, i) => (
-              <div 
-                key={i} 
-                className="relative h-20 md:h-28 w-44 md:w-60 flex-shrink-0 flex items-center justify-center px-3 transition-transform duration-300 hover:scale-110"
-              >
-                <Image
-                  src={brand.logo}
-                  alt={brand.name}
-                  fill
-                  /* 🔹 عرض الصور بألوانها وشكلها الطبيعي بدون أي فلاتر */
-                  className="object-contain"
-                />
-              </div>
-            ))}
-          </div>
+        {/* 🔹 عرض العلامات في شبكة مركزية مرنة وثابتة */}
+        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-14 py-4">
+          {brands.map((brand, i) => (
+            <div 
+              key={i} 
+              className="relative h-16 md:h-24 w-36 md:w-52 flex items-center justify-center p-2 transition-transform duration-300 hover:scale-105"
+            >
+              <Image
+                src={brand.logo}
+                alt={brand.name}
+                fill
+                className="object-contain"
+              />
+            </div>
+          ))}
         </div>
       </div>
 
