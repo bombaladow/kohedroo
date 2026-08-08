@@ -14,11 +14,9 @@ export default function Hero({ settings }) {
   const brands = [
     { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png' },
     { name: 'Joyalukkas', logo: '/brands/joyalukkas.png' },
-    { name: 'Giordano', logo: '/brands/giordano.png' },
     { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png' },
     { name: 'Al Ain Water', logo: '/brands/al-ain-water.png' },
     { name: 'OnPlan Group', logo: '/brands/onplan.png' },
-    { name: 'nakai', logo: '/brands/nakai.png' },
   ];
 
   return (
