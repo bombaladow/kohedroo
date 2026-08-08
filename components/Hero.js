@@ -10,7 +10,7 @@ export default function Hero({ settings }) {
     ['UAE & EG', 'Key Markets']
   ];
 
-  // 🔹 قائمة اللوجوهات الرئيسية المختارة
+  // 🔹 قائمة اللوجوهات الرئيسية
   const brands = [
     { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png' },
     { name: 'Joyalukkas', logo: '/brands/joyalukkas.png' },
@@ -65,27 +65,25 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* 2. قسم اللوجوهات بتنسيق متوازن وأنيق */}
-      <div className="w-full max-w-5xl border-t border-black/10 pt-10 mb-12">
-        <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-8 font-semibold">
+      {/* 2. قسم اللوجوهات الموزونة واضحة الحجم */}
+      <div className="w-full max-w-6xl border-t border-black/10 pt-10 mb-16">
+        <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-10 font-semibold">
           Brands & Clients Worked With
         </span>
         
-        {/* شبكة لوجوهات متناسقة الأحجام والأبعاد */}
-        <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 py-2">
+        {/* شبكة لوجوهات بحجم بارز ومريح للعين */}
+        <div className="flex flex-wrap items-center justify-center gap-10 md:gap-16 py-2">
           {brands.map((brand, i) => (
             <div 
               key={i} 
-              /* 🔹 حجم متناسق (ارتفاع 32px إلى 48px وعرض متناسب) */
-              className="relative h-8 md:h-12 w-28 md:w-36 flex items-center justify-center opacity-85 hover:opacity-100 transition-opacity duration-300"
+              /* 🔹 تكبير الارتفاع والعرض ليكون متناسقاً جداً مع السكشن */
+              className="relative h-14 md:h-20 w-40 md:w-56 flex items-center justify-center transition-transform duration-300 hover:scale-105"
             >
               <Image
                 src={brand.logo}
                 alt={brand.name}
                 fill
-                className={`object-contain ${
-                  brand.name === 'Damas-Rose' ? 'filter invert' : ''
-                }`}
+                className="object-contain"
               />
             </div>
           ))}
