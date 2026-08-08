@@ -18,7 +18,6 @@ export default function Hero({ settings }) {
     { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png' },
     { name: 'Al Ain Water', logo: '/brands/al-ain-water.png' },
     { name: 'OnPlan Group', logo: '/brands/onplan.png' },
-    { name: 'nakai', logo: '/brands/nakai.png' },
   ];
 
   return (
