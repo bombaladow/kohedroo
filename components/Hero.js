@@ -69,13 +69,13 @@ export default function Hero({ settings }) {
           Brands & Clients Worked With
         </span>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-14 gap-y-10 md:gap-x-20 py-2">
+        <div className="flex flex-wrap items-center justify-center gap-x-16 gap-y-12 md:gap-x-24 py-4">
           {brands.map((brand, i) => (
             <img
               key={i}
               src={brand.logo}
               alt={brand.name}
-              className="h-8 md:h-11 w-auto object-contain grayscale opacity-60 hover:opacity-100 hover:grayscale-0 transition-all duration-300"
+              className="h-12 md:h-20 w-auto object-contain transition-transform duration-300 hover:scale-110"
             />
           ))}
         </div>
