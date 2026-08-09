@@ -11,20 +11,51 @@ export default function Hero({ settings }) {
   ];
 
   // 🔹 قائمة اللوجوهات الرئيسية
+  // size: نسبة مقاس اللوجو ده لوحده. 1 = المقاس العادي.
+  // كبّرها لـ 1.2 / 1.3 لو اللوجو شكله صغير (زي اللوجوهات الدائرية أو الخط الرفيع مثل Rasasi)
+  // صغّرها لـ 0.8 / 0.7 لو اللوجو عريض وبيسيطر على الصف (زي Nikai أو أي لوجو Bold عريض)
   const brands = [
-    { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png' },
-    { name: 'Joyalukkas', logo: '/brands/joyalukkas.png' },
-    { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png' },
-    { name: 'Al Ain Water', logo: '/brands/al-ain-water.png' },
-    { name: 'OnPlan Group', logo: '/brands/onplan.png' },
+    { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png', size: 1.15 },
+    { name: 'Joyalukkas', logo: '/brands/joyalukkas.png', size: 1 },
+    { name: 'el-gharir', logo: '/brands/el-gharir.png', size: 1 },
+    { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png', size: 1.2 },
+    { name: 'Al Ain Water', logo: '/brands/al-ain-water.png', size: 1 },
+    { name: 'OnPlan Group', logo: '/brands/onplan.png', size: 1 },
+    { name: '800sayare', logo: '/brands/800sayare.png', size: 1 },
+    { name: 'amd', logo: '/brands/amd.png', size: 0.85 },
+    { name: 'capital-perfume-store', logo: '/brands/capital-perfume-store.png', size: 1 },
+    { name: 'dayali', logo: '/brands/dayali.png', size: 1 },
+    { name: 'hill-crest', logo: '/brands/hill-crest.png', size: 1 },
+    { name: 'thangals', logo: '/brands/thangals.png', size: 1 },
+    { name: 'Faridah', logo: '/brands/Faridah.png', size: 1 },
+    { name: 'giordano', logo: '/brands/giordano.png', size: 1 },
+    { name: 'hemani', logo: '/brands/hemani.png', size: 1 },
+    { name: 'jkosmec', logo: '/brands/jkosmec.png', size: 1 },
+    { name: 'unikai', logo: '/brands/unikai.png', size: 0.85 },
+    { name: 'world-bazzar', logo: '/brands/world-bazzar.png', size: 1 },
+    { name: 'lejour', logo: '/brands/lejour.png', size: 1 },
+    { name: 'ujala', logo: '/brands/ujala.png', size: 1 },
+    { name: 'patek-maison', logo: '/brands/patek-maison.png', size: 1 },
+    { name: 'tamra', logo: '/brands/tamra.png', size: 1 },
+    { name: 'mirada', logo: '/brands/mirada.png', size: 1 },
+    { name: 'makkaj', logo: '/brands/makkaj.png', size: 1 },
+    { name: 'EHSAS', logo: '/brands/EHSAS.png', size: 1 },
+    { name: 'dayali-2', logo: '/brands/dayali.png', size: 1 },
+    { name: 'Damas-Rose', logo: '/brands/Damas-Rose.png', size: 1 },
+    { name: 'COCOA-MELTS', logo: '/brands/COCOA-MELTS.png', size: 1 },
+    { name: 'nakai', logo: '/brands/nakai.png', size: 0.85 },
   ];
+
+  // المقاس الأساسي بالبكسل (بيتضرب في size بتاع كل لوجو)
+  const BASE_HEIGHT_MOBILE = 56;
+  const BASE_HEIGHT_DESKTOP = 72;
 
   return (
     <section className="pt-32 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center overflow-hidden">
-      
+
       {/* 1. قسم اللوجو والبايو والأزرار */}
       <div className="max-w-4xl flex flex-col items-center">
-        
+
         {/* اللوجو الرئيسي */}
         <div className="relative w-72 md:w-96 h-24 md:h-32 mb-6 flex items-center justify-center">
           <Image
@@ -61,21 +92,29 @@ export default function Hero({ settings }) {
         </div>
       </div>
 
-      {/* 2. قسم اللوجوهات — نفس الارتفاع بالظبط لكل اللوجوهات، والعرض بيتحسب لوحده */}
+      {/* 2. قسم اللوجوهات — كل لوجو له مقاس متحكم فيه لوحده عبر خاصية size */}
       <div className="w-full max-w-6xl border-t border-black/10 pt-10 mb-16">
         <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-10 font-semibold">
           Brands & Clients Worked With
         </span>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-16 gap-y-12 md:gap-x-24 py-4">
-          {brands.map((brand, i) => (
-            <img
-              key={i}
-              src={brand.logo}
-              alt={brand.name}
-              className="h-16 md:h-20 max-w-[130px] md:max-w-[180px] w-auto object-contain transition-transform duration-300 hover:scale-110"
-            />
-          ))}
+        <div className="flex flex-wrap items-center justify-center gap-x-14 gap-y-10 md:gap-x-20 py-4">
+          {brands.map((brand, i) => {
+            const scale = brand.size || 1;
+            return (
+              <img
+                key={i}
+                src={brand.logo}
+                alt={brand.name}
+                style={{
+                  '--logo-h': `${BASE_HEIGHT_MOBILE * scale}px`,
+                  '--logo-h-md': `${BASE_HEIGHT_DESKTOP * scale}px`,
+                  maxWidth: `${190 * scale}px`
+                }}
+                className="w-auto object-contain transition-transform duration-300 hover:scale-110 h-[var(--logo-h)] md:h-[var(--logo-h-md)]"
+              />
+            );
+          })}
         </div>
       </div>
 
