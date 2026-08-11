@@ -40,7 +40,6 @@ export default function Hero({ settings }) {
     { name: 'mirada', logo: '/brands/mirada.png', size: 1 },
     { name: 'makkaj', logo: '/brands/makkaj.png', size: 1.2 },
     { name: 'EHSAS', logo: '/brands/EHSAS.png', size: 1 },
-    { name: 'dayali-2', logo: '/brands/dayali.png', size: 1 },
     { name: 'Damas-Rose', logo: '/brands/Damas-Rose.png', size: 0.90 },
     { name: 'COCOA-MELTS', logo: '/brands/COCOA-MELTS.png', size: 1 },
     { name: 'nakai', logo: '/brands/nakai.png', size: 0.85 },
