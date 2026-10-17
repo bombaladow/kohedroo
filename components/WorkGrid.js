@@ -32,28 +32,24 @@ function ProjectCard({ project, index }) {
     y.set(yPct);
   };
 
-  // 🎯 تشغيل الفيديو عند الهوفر
   const handleMouseEnter = () => {
     if (hasVideo && videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
   };
 
-  // 🎯 إيقاف الفيديو وإرجاع الكارت لوضعه الطبيعي عند الخروج
   const handleMouseLeave = () => {
     x.set(0);
     y.set(0);
     if (hasVideo && videoRef.current) {
       videoRef.current.pause();
-      videoRef.current.currentTime = 0; // إرجاع الفيديو من الأول
+      videoRef.current.currentTime = 0;
     }
   };
 
-  // للموبايل: تشغيل الفيديو لو ظهر في الشاشة (عشان مفيش هوفر)
+  // تشغيل الفيديو تلقائياً على الموبايل
   useEffect(() => {
     if (!hasVideo || !videoRef.current) return;
-    
-    // تشغيل تلقائي لو إحنا في الموبايل (شاشة أقل من 768 بكسل)
     const isMobile = window.innerWidth < 768;
     if (isMobile) {
       if (isInView) {
@@ -71,7 +67,7 @@ function ProjectCard({ project, index }) {
         ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        onMouseEnter={handleMouseEnter} // ضفنا دي
+        onMouseEnter={handleMouseEnter}
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.2 }}
@@ -200,6 +196,7 @@ export default function WorkGrid({ projects, showViewAllButton = true }) {
         </motion.div>
       )}
 
+      {/* الزرار اللي بيوديك لصفحة الأرشيف */}
       {showViewAllButton && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
