@@ -1,62 +1,63 @@
 'use client';
 
 import Image from 'next/image';
+import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowDown, MessageSquare } from 'lucide-react';
+import { useRef, useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient'; // ضفنا سوبابيز
+import MagneticButton from './MagneticButton';
 
 export default function Hero({ settings }) {
+  const containerRef = useRef(null);
+  const [brands, setBrands] = useState([]);
+
+  // جلب اللوجوهات من الداتابيز
+  useEffect(() => {
+    const fetchBrands = async () => {
+      const { data } = await supabase.from('brands').select('*').order('created_at', { ascending: true });
+      if (data && data.length > 0) {
+        setBrands(data.map(b => ({ name: b.name, logo: b.logo_url, size: b.size })));
+      } else {
+        // لو الداتابيز فاضية، استخدم اللوجوهات القديمة (Fallback)
+        setBrands([
+          { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png', size: 1.15 },
+          { name: 'Joyalukkas', logo: '/brands/joyalukkas.png', size: 1.2 },
+          // ... (باقي اللوجوهات زي ما هي لو حبيت تكملها هنا كاحتياطي)
+        ]);
+      }
+    };
+    fetchBrands();
+  }, []);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"],
+  });
+  const logoY = useTransform(scrollYProgress, [0, 1], [0, -80]);
+  const logoOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0.2]);
+
   const stats = [
     ['13+', 'Years Experience'],
     ['100+', 'AI Commercial Videos'],
-    ['UAE & EG', 'Key Markets']
+    ['UAE & EG', 'Key Markets'],
   ];
 
-  // 🔹 قائمة اللوجوهات الرئيسية
-  // size: نسبة مقاس اللوجو ده لوحده. 1 = المقاس العادي.
-  // كبّرها لـ 1.2 / 1.3 لو اللوجو شكله صغير (زي اللوجوهات الدائرية أو الخط الرفيع مثل Rasasi)
-  // صغّرها لـ 0.8 / 0.7 لو اللوجو عريض وبيسيطر على الصف (زي Nikai أو أي لوجو Bold عريض)
-  const brands = [
-    { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png', size: 1.15 },
-    { name: 'Joyalukkas', logo: '/brands/joyalukkas.png', size: 1.2 },
-    { name: 'el-gharir', logo: '/brands/el-gharir.png', size: 1 },
-    { name: 'Rasasi Perfumes', logo: '/brands/rasasi.png', size: 1.2 },
-    { name: 'Al Ain Water', logo: '/brands/al-ain-water.png', size: 1 },
-    { name: 'OnPlan Group', logo: '/brands/onplan.png', size: 1.2 },
-    { name: '800sayare', logo: '/brands/800sayare.png', size: 1 },
-    { name: 'amd', logo: '/brands/amd.png', size: 1 },
-    { name: 'capital-perfume-store', logo: '/brands/capital-perfume-store.png', size: 1 },
-    { name: 'dayali', logo: '/brands/dayali.png', size: 1 },
-    { name: 'hill-crest', logo: '/brands/hill-crest.png', size: 1 },
-    { name: 'thangals', logo: '/brands/thangals.png', size: 1.2 },
-    { name: 'Faridah', logo: '/brands/Faridah.png', size: 1 },
-    { name: 'giordano', logo: '/brands/giordano.png', size: 1.3 },
-    { name: 'hemani', logo: '/brands/hemani.png', size: 0.85 },
-    { name: 'jkosmec', logo: '/brands/jkosmec.png', size: 1 },
-    { name: 'unikai', logo: '/brands/unikai.png', size: 0.85 },
-    { name: 'world-bazzar', logo: '/brands/world-bazzar.png', size: 1 },
-    { name: 'lejour', logo: '/brands/lejour.png', size: 1 },
-    { name: 'ujala', logo: '/brands/ujala.png', size: 1 },
-    { name: 'patek-maison', logo: '/brands/patek-maison.png', size: 1.2 },
-    { name: 'tamra', logo: '/brands/tamra.png', size: 1 },
-    { name: 'mirada', logo: '/brands/mirada.png', size: 1 },
-    { name: 'makkaj', logo: '/brands/makkaj.png', size: 1.2 },
-    { name: 'EHSAS', logo: '/brands/EHSAS.png', size: 1 },
-    { name: 'Damas-Rose', logo: '/brands/Damas-Rose.png', size: 0.90 },
-    { name: 'COCOA-MELTS', logo: '/brands/COCOA-MELTS.png', size: 1 },
-    { name: 'nakai', logo: '/brands/nakai.png', size: 0.85 },
-  ];
-
-  // المقاس الأساسي بالبكسل (بيتضرب في size بتاع كل لوجو)
-  const BASE_HEIGHT_MOBILE = 56;
+  const BASE_HEIGHT_MOBILE = 48;
   const BASE_HEIGHT_DESKTOP = 72;
 
   return (
-    <section className="pt-32 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center overflow-hidden">
-
-      {/* 1. قسم اللوجو والبايو والأزرار */}
+    <section
+      ref={containerRef}
+      className="pt-28 md:pt-32 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center overflow-hidden"
+    >
       <div className="max-w-4xl flex flex-col items-center">
-
-        {/* اللوجو الرئيسي */}
-        <div className="relative w-72 md:w-96 h-24 md:h-32 mb-6 flex items-center justify-center">
+        <motion.div
+          style={{ y: logoY, opacity: logoOpacity }}
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+          className="relative w-56 sm:w-72 md:w-96 h-20 sm:h-24 md:h-32 mb-6 flex items-center justify-center"
+        >
           <Image
             src="/KOHEDROO.png"
             alt={settings?.hero_title || 'KOHEDROO'}
@@ -64,73 +65,132 @@ export default function Hero({ settings }) {
             className="object-contain"
             priority
           />
-        </div>
+        </motion.div>
 
-        {/* النبذة المختصرة */}
-        <p className="text-zinc-700 text-lg md:text-2xl font-normal leading-relaxed tracking-tight max-w-3xl mb-8">
-          {settings?.hero_subtitle || 'Art Director & AI Creative Lead with 13+ years driving visual storytelling, AI production, and premium commercial branding across Dubai & Egypt.'}
-        </p>
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="text-zinc-700 text-base sm:text-lg md:text-2xl font-normal leading-relaxed tracking-tight max-w-3xl mb-8 px-2"
+        >
+          {settings?.hero_subtitle ||
+            'Art Director & AI Creative Lead with 13+ years driving visual storytelling, AI production, and premium commercial branding across Dubai & Egypt.'}
+        </motion.p>
 
-        {/* الأزرار */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
-          <a
-            href="#work"
-            className="group inline-flex items-center gap-3 bg-black text-white font-mono text-xs uppercase px-7 py-3.5 rounded-full font-semibold tracking-wider hover:bg-zinc-800 transition-all shadow-md"
-          >
-            <span>Explore Projects</span>
-            <ArrowDown size={15} className="group-hover:translate-y-1 transition-transform" />
-          </a>
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={{
+            visible: { transition: { staggerChildren: 0.12, delayChildren: 0.6 } },
+          }}
+          className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-14 md:mb-16 w-full sm:w-auto px-4 sm:px-0"
+        >
+          <MagneticButton className="w-full sm:w-auto">
+            <motion.a
+              variants={{
+                hidden: { opacity: 0, y: 20 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+              }}
+              href="#work"
+              className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-black text-white font-mono text-xs uppercase px-7 py-3.5 rounded-full font-semibold tracking-wider hover:bg-zinc-800 transition-all shadow-md"
+            >
+              <span>Explore Projects</span>
+              <ArrowDown size={15} className="group-hover:translate-y-1 transition-transform" />
+            </motion.a>
+          </MagneticButton>
 
-          <a
+          <motion.a
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+            }}
             href="#contact"
-            className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-md border border-black/15 text-black font-mono text-xs uppercase px-7 py-3.5 rounded-full font-semibold tracking-wider hover:bg-white hover:border-black/40 transition-all shadow-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white/80 backdrop-blur-md border border-black/15 text-black font-mono text-xs uppercase px-7 py-3.5 rounded-full font-semibold tracking-wider hover:bg-white hover:border-black/40 transition-all shadow-sm"
           >
             <MessageSquare size={15} />
             <span>Let&apos;s Talk</span>
-          </a>
-        </div>
+          </motion.a>
+        </motion.div>
       </div>
 
-      {/* 2. قسم اللوجوهات — كل لوجو له مقاس متحكم فيه لوحده عبر خاصية size */}
-      <div className="w-full max-w-6xl border-t border-black/10 pt-10 mb-16">
-        <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-10 font-semibold">
+      {/* Brands Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7 }}
+        className="w-full max-w-6xl border-t border-black/10 pt-10 mb-14 md:mb-16"
+      >
+        <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-8 md:mb-10 font-semibold">
           Brands & Clients Worked With
         </span>
 
-        <div className="flex flex-wrap items-center justify-center gap-x-14 gap-y-10 md:gap-x-20 py-4">
+        <div className="md:hidden -mx-6 px-6 overflow-x-auto snap-x-mandatory no-scrollbar flex gap-8 py-4">
           {brands.map((brand, i) => {
             const scale = brand.size || 1;
             return (
-              <img
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: (i % 8) * 0.05 }}
+                className="snap-center flex-shrink-0 flex items-center justify-center h-16 px-2"
+                style={{ minWidth: '100px' }}
+              >
+                <img
+                  src={brand.logo}
+                  alt={brand.name}
+                  style={{ height: `${BASE_HEIGHT_MOBILE * scale}px`, maxWidth: `${150 * scale}px` }}
+                  className="w-auto object-contain"
+                />
+              </motion.div>
+            );
+          })}
+        </div>
+
+        <div className="hidden md:flex flex-wrap items-center justify-center gap-x-20 gap-y-10 py-4">
+          {brands.map((brand, i) => {
+            const scale = brand.size || 1;
+            return (
+              <motion.img
                 key={i}
                 src={brand.logo}
                 alt={brand.name}
-                style={{
-                  '--logo-h': `${BASE_HEIGHT_MOBILE * scale}px`,
-                  '--logo-h-md': `${BASE_HEIGHT_DESKTOP * scale}px`,
-                  maxWidth: `${190 * scale}px`
-                }}
-                className="w-auto object-contain transition-transform duration-300 hover:scale-110 h-[var(--logo-h)] md:h-[var(--logo-h-md)]"
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.3, delay: (i % 10) * 0.03 }}
+                style={{ height: `${BASE_HEIGHT_DESKTOP * scale}px`, maxWidth: `${190 * scale}px` }}
+                className="w-auto object-contain transition-transform duration-300 hover:scale-110 cursor-pointer"
               />
             );
           })}
         </div>
-      </div>
+      </motion.div>
 
-      {/* 3. الإحصائيات والأرقام */}
-      <div className="w-full max-w-4xl border-t border-black/10 pt-10 flex justify-center gap-12 md:gap-24 flex-wrap">
+      {/* Stats Section */}
+      <motion.div
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.4 }}
+        variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
+        className="w-full max-w-4xl border-t border-black/10 pt-10 flex justify-center gap-8 sm:gap-12 md:gap-24 flex-wrap"
+      >
         {stats.map(([value, label], i) => (
-          <div key={i} className="flex flex-col items-center">
-            <span className="text-3xl md:text-5xl font-extrabold tracking-tighter text-black font-sans leading-none">
-              {value}
-            </span>
-            <span className="text-zinc-500 text-xs font-mono uppercase tracking-widest font-semibold mt-2">
-              {label}
-            </span>
-          </div>
+          <motion.div
+            key={i}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+            }}
+            className="flex flex-col items-center"
+          >
+            <span className="text-3xl md:text-5xl font-extrabold tracking-tighter text-black font-sans leading-none">{value}</span>
+            <span className="text-zinc-500 text-[10px] md:text-xs font-mono uppercase tracking-widest font-semibold mt-2">{label}</span>
+          </motion.div>
         ))}
-      </div>
-
+      </motion.div>
     </section>
   );
 }

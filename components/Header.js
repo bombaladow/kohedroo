@@ -1,106 +1,146 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useState, useEffect } from 'react';
+import { mobileMenuVariants, mobileLinkVariants } from '@/lib/animations';
 
 export default function Header({ isMenuOpen, setIsMenuOpen }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      // بيظهر اللوجو في الهيدر لما تنزل 100 بكسل تحت (بعد اللوجو الكبير)
-      if (window.scrollY > 100) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-    };
-
+    const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
+  }, [isMenuOpen]);
+
+  // ⚠️ تم شيل الآراء من هنا
+  const navLinks = [
+    { name: 'Work', href: '#work' },
+    { name: 'About', href: '#about' },
+    { name: 'Contact', href: '#contact' },
+  ];
+
+  const closeMenu = () => setIsMenuOpen(false);
+
   return (
     <>
-      <header className="fixed top-0 left-0 w-full z-50 p-4 md:p-6 pointer-events-none transition-all duration-300">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-
-          {/* ================= DESKTOP HEADER ================= */}
-          <div className="hidden md:flex items-center pointer-events-auto mx-auto">
-            <div 
-              className={`flex items-center bg-black/80 backdrop-blur-md border border-zinc-800/80 rounded-full transition-all duration-500 ease-in-out shadow-2xl ${
-                scrolled ? 'px-6 py-2.5 gap-6' : 'px-8 py-3.5 gap-8'
-              }`}
-            >
-              {/* اللوجو - بيظهر بسلاسة لما تسكرول لتحت */}
-              <a 
-                href="#" 
-                className={`relative h-6 transition-all duration-500 overflow-hidden flex items-center ${
-                  scrolled ? 'w-28 opacity-100' : 'w-0 opacity-0 pointer-events-none'
-                }`}
-              >
-                <Image
-                  src="/KOHEDROO.png"
-                  alt="KOHEDROO"
-                  fill
-                  className="object-contain filter invert"
-                  priority
-                />
-              </a>
-
-              {/* القائمة الرئيسية (بدون Services) */}
-              <nav className="flex items-center gap-8 font-mono text-xs uppercase tracking-widest text-zinc-400">
-                <a href="#work" className="hover:text-white transition-colors whitespace-nowrap">Work</a>
-                <a href="#about" className="hover:text-white transition-colors whitespace-nowrap">About</a>
-                <a href="#contact" className="hover:text-white transition-colors whitespace-nowrap">Contact</a>
-              </nav>
+      <motion.header
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled 
+            ? 'bg-white/80 backdrop-blur-xl border-b border-black/5 py-3' 
+            : 'bg-transparent py-5'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
+          
+          <Link href="/" className="relative z-50 flex items-center" onClick={closeMenu}>
+            <div className="relative w-32 md:w-40 h-8 md:h-10">
+              <Image
+                src="/KOHEDROO.png"
+                alt="KOHEDROO Logo"
+                fill
+                className="object-contain object-left"
+                priority
+              />
             </div>
-          </div>
+          </Link>
 
-          {/* ================= MOBILE HEADER ================= */}
-          <div className="flex md:hidden items-center justify-between w-full pointer-events-auto">
-            <div 
-              className={`flex items-center justify-between w-full bg-black/80 backdrop-blur-md border border-zinc-800 rounded-full transition-all duration-300 shadow-2xl ${
-                scrolled ? 'px-4 py-2' : 'px-5 py-3'
-              }`}
+          <nav className="hidden md:flex items-center gap-10">
+            {navLinks.map((link) => (
+              <Link
+                key={link.name}
+                href={link.href}
+                className="text-sm font-medium text-zinc-700 hover:text-black transition-colors relative group font-mono uppercase tracking-widest"
+              >
+                {link.name}
+                <span className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-black transition-all duration-300 group-hover:w-full" />
+              </Link>
+            ))}
+            <Link
+              href="#contact"
+              className="bg-black text-white text-xs font-mono uppercase px-6 py-3 rounded-full font-bold tracking-wider hover:bg-zinc-800 transition-all hover:scale-105"
             >
-              {/* اللوجو على الموبايل بيظهر مع السكرول */}
-              <a 
-                href="#" 
-                className={`relative transition-all duration-300 flex items-center ${
-                  scrolled ? 'h-5 w-20 opacity-100' : 'h-5 w-0 opacity-0'
-                }`}
-              >
-                <Image
-                  src="/KOHEDROO.png"
-                  alt="KOHEDROO"
-                  fill
-                  className="object-contain filter invert"
-                  priority
-                />
-              </a>
+              Let&apos;s Talk
+            </Link>
+          </nav>
 
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="text-zinc-300 hover:text-white transition-colors ml-auto"
-              >
-                {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
-              </button>
-            </div>
-          </div>
-
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="md:hidden relative z-50 w-11 h-11 flex items-center justify-center rounded-full bg-black/5 active:bg-black/10 transition-colors"
+          >
+            {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
         </div>
-      </header>
+      </motion.header>
 
-      {/* ================= MOBILE DRAWER MENU ================= */}
-      {isMenuOpen && (
-        <div className="fixed inset-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col justify-center items-center space-y-8 text-2xl font-mono uppercase font-bold text-zinc-300 pointer-events-auto">
-          <a href="#work" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>Work</a>
-          <a href="#about" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>About</a>
-          <a href="#contact" className="hover:text-white transition-colors" onClick={() => setIsMenuOpen(false)}>Contact</a>
-        </div>
-      )}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            variants={mobileMenuVariants}
+            initial="closed"
+            animate="open"
+            exit="closed"
+            className="fixed inset-0 z-40 bg-white flex flex-col justify-center px-8 md:hidden"
+          >
+            <nav className="flex flex-col gap-2">
+              {navLinks.map((link, i) => (
+                <motion.div
+                  key={link.name}
+                  custom={i}
+                  variants={mobileLinkVariants}
+                  initial="closed"
+                  animate="open"
+                  exit="closed"
+                >
+                  <Link
+                    href={link.href}
+                    onClick={closeMenu}
+                    className="block text-4xl font-extrabold tracking-tighter text-black py-3 active:text-zinc-500 transition-colors uppercase font-mono"
+                  >
+                    {link.name}
+                  </Link>
+                </motion.div>
+              ))}
+              <motion.div
+                custom={navLinks.length}
+                variants={mobileLinkVariants}
+                initial="closed"
+                animate="open"
+                exit="closed"
+                className="mt-8"
+              >
+                <Link
+                  href="#contact"
+                  onClick={closeMenu}
+                  className="inline-block bg-black text-white text-sm font-mono uppercase px-8 py-4 rounded-full font-semibold tracking-wider"
+                >
+                  Let&apos;s Talk
+                </Link>
+              </motion.div>
+            </nav>
+
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, transition: { delay: 0.5 } }}
+              exit={{ opacity: 0 }}
+              className="absolute bottom-10 left-8 right-8 flex justify-between text-xs font-mono uppercase text-zinc-400 tracking-widest"
+            >
+              <span>Dubai — Egypt</span>
+              <span>© 2026</span>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
