@@ -8,33 +8,7 @@ const cairo = Cairo({
   variable: "--font-cairo",
 });
 
-export const metadata = {
-  title: "Kohedroo | Art Director & AI Creative Lead",
-  description: "Art Director & AI Creative Lead with 13+ years driving visual storytelling, AI production, and premium commercial branding across Dubai & Egypt.",
-  keywords: ["Art Director", "AI Creative Lead", "Graphic Designer", "Dubai", "Egypt", "Branding", "Commercial Videos"],
-  openGraph: {
-    title: "Kohedroo | Art Director & AI Creative Lead",
-    description: "Portfolio of Kohedroo - 13+ years of premium commercial branding.",
-    url: "https://kohedroo.com",
-    siteName: "Kohedroo",
-    images: [
-      {
-        url: "/KOHEDROO.png",
-        width: 800,
-        height: 600,
-        alt: "Kohedroo Logo",
-      },
-    ],
-    locale: "en_US",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Kohedroo | Art Director",
-    description: "Portfolio of Kohedroo - 13+ years of premium commercial branding.",
-    images: ["/KOHEDROO.png"],
-  },
-};
+// ... (metadata)
 
 export default function RootLayout({ children }) {
   return (

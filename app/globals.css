@@ -10,9 +10,6 @@
   html, body {
     overflow-x: hidden;
   }
-  * {
-    -webkit-tap-highlight-color: transparent;
-  }
 }
 
 @layer components {
@@ -59,7 +56,6 @@
   }
 }
 
-/* Ambient Noise Texture */
 .noise-bg {
   position: fixed;
   top: 0;
