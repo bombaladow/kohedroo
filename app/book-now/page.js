@@ -4,45 +4,38 @@ import { supabase } from '@/lib/supabaseClient';
 import { motion } from 'framer-motion';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useLoading } from '@/lib/LoadingContext'; // ضفنا ده
 
 export default function BookNow() {
+  const { setIsDataLoaded } = useLoading(); // ضفنا ده
   const [packages, setPackages] = useState([]);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', package_id: '', date: '', time: '', notes: '' });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // بنجيب الباكدجات اللي أخوك ضافها في الداش بورد
   useEffect(() => {
+    setIsDataLoaded(true); // بنقفل شاشة التحميل فوراً
+
     const fetchPackages = async () => {
-      const { data } = await supabase
-        .from('packages')
-        .select('*')
-        .eq('is_active', true); // بس الباكدجات الفعالة
+      const { data } = await supabase.from('packages').select('*').eq('is_active', true);
       setPackages(data || []);
     };
     fetchPackages();
-  }, []);
+  }, [setIsDataLoaded]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      // 1. بنسجل العميل ومعلوماته في جدول العملاء
       const { data: clientData, error: clientError } = await supabase
         .from('clients')
-        .insert([{ 
-          name: formData.name, 
-          email: formData.email, 
-          phone: formData.phone, 
-          status: 'Lead' 
-        }])
+        .insert([{ name: formData.name, email: formData.email, phone: formData.phone, status: 'Lead' }])
         .select()
         .single();
       
       if (clientError) throw clientError;
       if (!clientData) throw new Error("Failed to save client data.");
 
-      // 2. بنسجل الحجز ونربطه بالعميل والباكدج اللي اختاره
       const { error: bookingError } = await supabase
         .from('bookings')
         .insert([{
@@ -106,7 +99,7 @@ export default function BookNow() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
-                <label className="block text-sm font-semibold mb-2">Select Package (Added by Admin)</label>
+                <label className="block text-sm font-semibold mb-2">Select Package</label>
                 <select className="input" value={formData.package_id} onChange={(e) => setFormData({...formData, package_id: e.target.value})}>
                   <option value="">No specific package</option>
                   {packages.map((p) => (

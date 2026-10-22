@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { ArrowDown, MessageSquare } from 'lucide-react';
 import { useRef, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient'; // ضفنا سوبابيز
+import { supabase } from '@/lib/supabaseClient';
 import MagneticButton from './MagneticButton';
 
 export default function Hero({ settings }) {
@@ -14,15 +14,14 @@ export default function Hero({ settings }) {
   // جلب اللوجوهات من الداتابيز
   useEffect(() => {
     const fetchBrands = async () => {
-      const { data } = await supabase.from('brands').select('*').order('created_at', { ascending: true });
+      const { data } = await supabase.from('brands').select('*').order('sort_order', { ascending: true });
       if (data && data.length > 0) {
         setBrands(data.map(b => ({ name: b.name, logo: b.logo_url, size: b.size })));
       } else {
-        // لو الداتابيز فاضية، استخدم اللوجوهات القديمة (Fallback)
         setBrands([
           { name: 'Dubai Duty Free', logo: '/brands/dubai-duty-free.png', size: 1.15 },
           { name: 'Joyalukkas', logo: '/brands/joyalukkas.png', size: 1.2 },
-          // ... (باقي اللوجوهات زي ما هي لو حبيت تكملها هنا كاحتياطي)
+          { name: 'el-gharir', logo: '/brands/el-gharir.png', size: 1 },
         ]);
       }
     };
@@ -125,7 +124,11 @@ export default function Hero({ settings }) {
           Brands & Clients Worked With
         </span>
 
-        <div className="md:hidden -mx-6 px-6 overflow-x-auto snap-x-mandatory no-scrollbar flex gap-8 py-4">
+        {/* 📱 موبايل: Horizontal Snap Scroll مع data-lenis-prevent عشان نمنع تعليق السكرول */}
+        <div 
+          data-lenis-prevent
+          className="md:hidden -mx-6 px-6 w-[calc(100%+3rem)] overflow-x-auto snap-x-mandatory no-scrollbar flex flex-nowrap gap-8 py-4"
+        >
           {brands.map((brand, i) => {
             const scale = brand.size || 1;
             return (
@@ -141,7 +144,10 @@ export default function Hero({ settings }) {
                 <img
                   src={brand.logo}
                   alt={brand.name}
-                  style={{ height: `${BASE_HEIGHT_MOBILE * scale}px`, maxWidth: `${150 * scale}px` }}
+                  style={{
+                    height: `${BASE_HEIGHT_MOBILE * scale}px`,
+                    maxWidth: `${150 * scale}px`,
+                  }}
                   className="w-auto object-contain"
                 />
               </motion.div>
@@ -149,6 +155,7 @@ export default function Hero({ settings }) {
           })}
         </div>
 
+        {/* 💻 ديسكتوب: Flex Wrap */}
         <div className="hidden md:flex flex-wrap items-center justify-center gap-x-20 gap-y-10 py-4">
           {brands.map((brand, i) => {
             const scale = brand.size || 1;
@@ -161,7 +168,10 @@ export default function Hero({ settings }) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.3, delay: (i % 10) * 0.03 }}
-                style={{ height: `${BASE_HEIGHT_DESKTOP * scale}px`, maxWidth: `${190 * scale}px` }}
+                style={{
+                  height: `${BASE_HEIGHT_DESKTOP * scale}px`,
+                  maxWidth: `${190 * scale}px`,
+                }}
                 className="w-auto object-contain transition-transform duration-300 hover:scale-110 cursor-pointer"
               />
             );
@@ -186,8 +196,12 @@ export default function Hero({ settings }) {
             }}
             className="flex flex-col items-center"
           >
-            <span className="text-3xl md:text-5xl font-extrabold tracking-tighter text-black font-sans leading-none">{value}</span>
-            <span className="text-zinc-500 text-[10px] md:text-xs font-mono uppercase tracking-widest font-semibold mt-2">{label}</span>
+            <span className="text-3xl md:text-5xl font-extrabold tracking-tighter text-black font-sans leading-none">
+              {value}
+            </span>
+            <span className="text-zinc-500 text-[10px] md:text-xs font-mono uppercase tracking-widest font-semibold mt-2">
+              {label}
+            </span>
           </motion.div>
         ))}
       </motion.div>
