@@ -11,7 +11,6 @@ export default function Hero({ settings }) {
   const containerRef = useRef(null);
   const [brands, setBrands] = useState([]);
 
-  // جلب اللوجوهات من الداتابيز
   useEffect(() => {
     const fetchBrands = async () => {
       const { data } = await supabase.from('brands').select('*').order('sort_order', { ascending: true });
@@ -124,10 +123,10 @@ export default function Hero({ settings }) {
           Brands & Clients Worked With
         </span>
 
-        {/* 📱 موبايل: Horizontal Snap Scroll مع data-lenis-prevent عشان نمنع تعليق السكرول */}
+        {/* 📱 موبايل: Horizontal Scroll */}
         <div 
           data-lenis-prevent
-          className="md:hidden -mx-6 px-6 w-[calc(100%+3rem)] overflow-x-auto snap-x-mandatory no-scrollbar flex flex-nowrap gap-8 py-4"
+          className="md:hidden -mx-6 px-6 overflow-x-auto snap-x-mandatory no-scrollbar flex flex-nowrap gap-8 py-4"
         >
           {brands.map((brand, i) => {
             const scale = brand.size || 1;

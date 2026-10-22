@@ -9,40 +9,36 @@ export default function About({ settings }) {
   const skills = skillsString.split(',').map(s => s.trim());
 
   return (
-    <section id="about" className="py-20 md:py-28 px-6 md:px-12 bg-white relative z-10 border-t border-black/5">
+    <section id="about" className="py-16 md:py-28 px-6 md:px-12 bg-white relative z-10 border-t border-black/5">
       <div className="max-w-6xl mx-auto">
-        {/* استخدمنا 12 عمود عشان نظبط النسب (5 للصورة و 7 للكلام) */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-12 md:gap-16 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-16 items-center">
           
-          {/* الجزء الشمال: الصورة (5 أعمدة) */}
+          {/* الصورة */}
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
             transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="relative md:col-span-5 flex justify-center"
+            className="relative md:col-span-5 flex justify-center order-1 md:order-none"
           >
-            {/* الإطار الخلفي */}
             <div className="absolute inset-0 border-2 border-black translate-x-3 translate-y-3 md:translate-x-4 md:translate-y-4 rounded-3xl -z-10 max-w-xs md:max-w-sm mx-auto" />
-            
-            {/* حاوية الصورة مع تحديد أقصى عرض */}
             <div className="relative aspect-[4/5] w-full max-w-xs md:max-w-sm rounded-3xl overflow-hidden bg-zinc-100 shadow-lg">
               <Image
                 src={settings?.about_image || '/about-image.jpg'}
                 alt="Kohedroo - Art Director"
                 fill
-                className="object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                className="object-cover grayscale md:hover:grayscale-0 transition-all duration-700"
               />
             </div>
           </motion.div>
 
-          {/* الجزء اليمين: الكلام (7 أعمدة) */}
+          {/* الكلام */}
           <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            whileInView={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-            className="md:col-span-7"
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            className="md:col-span-7 text-center md:text-left order-2 md:order-none"
           >
             <h2 className="text-xs font-mono uppercase text-zinc-500 tracking-widest font-bold mb-4">
               Behind the Pixels
@@ -55,25 +51,16 @@ export default function About({ settings }) {
               {settings?.about_bio || "I am an Art Director and AI Creative Lead with over 13 years of experience. I specialize in turning complex ideas into premium visual experiences, blending traditional design with cutting-edge AI technology to deliver high-end commercial branding across Dubai and Egypt."}
             </p>
 
-            {/* المهارات */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-10 text-left">
               {skills.map((skill, index) => (
-                <motion.div 
-                  key={index}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="flex items-center gap-2"
-                >
+                <div key={index} className="flex items-center gap-2 justify-center md:justify-start">
                   <CheckCircle2 size={16} className="text-black flex-shrink-0" />
                   <span className="text-sm font-semibold text-zinc-800">{skill}</span>
-                </motion.div>
+                </div>
               ))}
             </div>
 
-            {/* الإحصائيات */}
-            <div className="flex gap-10 border-t border-black/10 pt-8 mb-8">
+            <div className="flex gap-10 border-t border-black/10 pt-8 mb-8 justify-center md:justify-start">
               <div>
                 <p className="text-3xl md:text-4xl font-extrabold">{settings?.stat_years || '13+'}</p>
                 <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mt-1">Years Exp.</p>

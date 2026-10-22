@@ -6,9 +6,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { mobileMenuVariants, mobileLinkVariants } from '@/lib/animations';
+import { useLenis } from 'lenis/react'; // ضفنا ده
 
 export default function Header({ isMenuOpen, setIsMenuOpen }) {
   const [scrolled, setScrolled] = useState(false);
+  const lenis = useLenis(); // بنجيب نسخة من Lenis
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -16,11 +18,15 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // الحل النهائي لمشكلة تعليق السكرول
   useEffect(() => {
-    document.body.style.overflow = isMenuOpen ? 'hidden' : 'unset';
-  }, [isMenuOpen]);
+    if (isMenuOpen) {
+      lenis?.stop(); // بنوقف السكرول بالطريقة الصح
+    } else {
+      lenis?.start(); // بنشغله تاني
+    }
+  }, [isMenuOpen, lenis]);
 
-  // ⚠️ تم شيل الآراء من هنا
   const navLinks = [
     { name: 'Work', href: '#work' },
     { name: 'About', href: '#about' },
@@ -55,6 +61,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
             </div>
           </Link>
 
+          {/* ديسكتوب: لينكات */}
           <nav className="hidden md:flex items-center gap-10">
             {navLinks.map((link) => (
               <Link
@@ -74,6 +81,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
             </Link>
           </nav>
 
+          {/* موبايل: زرار القائمة */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             className="md:hidden relative z-50 w-11 h-11 flex items-center justify-center rounded-full bg-black/5 active:bg-black/10 transition-colors"
@@ -83,6 +91,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
         </div>
       </motion.header>
 
+      {/* قائمة الموبايل */}
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div

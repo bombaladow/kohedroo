@@ -10,7 +10,7 @@ import { motion } from 'framer-motion';
 
 export default function AllWorkPage() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { projects, settings } = useSiteContent(); // شيلنا loading
+  const { projects, settings } = useSiteContent();
   
   const [activeCategory, setActiveCategory] = useState('All');
 
@@ -32,30 +32,26 @@ export default function AllWorkPage() {
       <ScrollProgress />
       <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       
-      <main className="pt-32 pb-10">
-        {/* ... (نفس الكود القديم) ... */}
-        <div className="text-center mb-12 px-6">
-          <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-5xl md:text-7xl font-extrabold tracking-tighter mb-4">
-            All Projects
-          </motion.h1>
-          <motion.p initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="text-zinc-500 font-mono text-sm uppercase tracking-widest">
-            The Complete Archive
-          </motion.p>
+      <main className="pt-28 md:pt-32 pb-10">
+        <div className="text-center mb-10 md:mb-12 px-6">
+          <h1 className="text-4xl md:text-7xl font-extrabold tracking-tighter mb-4">All Projects</h1>
+          <p className="text-zinc-500 font-mono text-xs md:text-sm uppercase tracking-widest">The Complete Archive</p>
         </div>
 
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex flex-wrap items-center justify-center gap-3 md:gap-4 px-6 mb-12">
+        {/* الفلاتر */}
+        <div className="flex overflow-x-auto md:flex-wrap md:justify-center items-center gap-2 md:gap-4 px-6 mb-10 md:mb-12 no-scrollbar snap-x-mandatory">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-6 py-2.5 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 border ${
+              className={`snap-center flex-shrink-0 px-5 py-2.5 rounded-full text-xs md:text-sm font-semibold tracking-wide transition-all duration-300 border ${
                 activeCategory === cat ? 'bg-black text-white border-black shadow-md' : 'bg-transparent text-zinc-600 border-black/20 hover:border-black/50 hover:text-black'
               }`}
             >
               {cat === 'All' ? 'All Works' : cat}
             </button>
           ))}
-        </motion.div>
+        </div>
 
         <WorkGrid projects={filteredProjects} showViewAllButton={false} />
       </main>
