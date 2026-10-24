@@ -27,6 +27,7 @@ export default function Home() {
       <ScrollProgress />
       <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
       
+      {/* الترتيب الجديد */}
       <Hero settings={settings} />
       <About settings={settings} />
       <BrandsShowcase />
