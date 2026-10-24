@@ -46,7 +46,7 @@ export default function Hero({ settings }) {
   return (
     <section
       ref={containerRef}
-      className="pt-28 md:pt-32 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center overflow-hidden"
+      className="pt-28 md:pt-32 pb-16 px-6 md:px-12 flex flex-col justify-between items-center text-center overflow-x-hidden w-full"
     >
       <div className="max-w-4xl flex flex-col items-center">
         <motion.div
@@ -112,13 +112,7 @@ export default function Hero({ settings }) {
       </div>
 
       {/* Brands Section */}
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.7 }}
-        className="w-full max-w-6xl border-t border-black/10 pt-10 mb-14 md:mb-16"
-      >
+      <div className="w-full max-w-6xl border-t border-black/10 pt-10 mb-14 md:mb-16">
         <span className="text-xs font-mono uppercase text-zinc-400 tracking-widest block mb-8 md:mb-10 font-semibold">
           Brands & Clients Worked With
         </span>
@@ -131,12 +125,8 @@ export default function Hero({ settings }) {
           {brands.map((brand, i) => {
             const scale = brand.size || 1;
             return (
-              <motion.div
+              <div
                 key={i}
-                initial={{ opacity: 0, scale: 0.8 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: (i % 8) * 0.05 }}
                 className="snap-center flex-shrink-0 flex items-center justify-center h-16 px-2"
                 style={{ minWidth: '100px' }}
               >
@@ -149,24 +139,20 @@ export default function Hero({ settings }) {
                   }}
                   className="w-auto object-contain"
                 />
-              </motion.div>
+              </div>
             );
           })}
         </div>
 
-        {/* 💻 ديسكتوب: Flex Wrap */}
+        {/* 💻 ديسكتوب: Flex Wrap (شيلنا الأنيميشن عشان كلهم يظهروا) */}
         <div className="hidden md:flex flex-wrap items-center justify-center gap-x-20 gap-y-10 py-4">
           {brands.map((brand, i) => {
             const scale = brand.size || 1;
             return (
-              <motion.img
+              <img
                 key={i}
                 src={brand.logo}
                 alt={brand.name}
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.3, delay: (i % 10) * 0.03 }}
                 style={{
                   height: `${BASE_HEIGHT_DESKTOP * scale}px`,
                   maxWidth: `${190 * scale}px`,
@@ -176,23 +162,13 @@ export default function Hero({ settings }) {
             );
           })}
         </div>
-      </motion.div>
+      </div>
 
       {/* Stats Section */}
-      <motion.div
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, amount: 0.4 }}
-        variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
-        className="w-full max-w-4xl border-t border-black/10 pt-10 flex justify-center gap-8 sm:gap-12 md:gap-24 flex-wrap"
-      >
+      <div className="w-full max-w-4xl border-t border-black/10 pt-10 flex justify-center gap-8 sm:gap-12 md:gap-24 flex-wrap">
         {stats.map(([value, label], i) => (
-          <motion.div
+          <div
             key={i}
-            variants={{
-              hidden: { opacity: 0, y: 20 },
-              visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
-            }}
             className="flex flex-col items-center"
           >
             <span className="text-3xl md:text-5xl font-extrabold tracking-tighter text-black font-sans leading-none">
@@ -201,9 +177,9 @@ export default function Hero({ settings }) {
             <span className="text-zinc-500 text-[10px] md:text-xs font-mono uppercase tracking-widest font-semibold mt-2">
               {label}
             </span>
-          </motion.div>
+          </div>
         ))}
-      </motion.div>
+      </div>
     </section>
   );
 }

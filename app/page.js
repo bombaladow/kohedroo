@@ -3,10 +3,8 @@
 import { useState, useEffect } from 'react';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
-import WorkGrid from '../components/WorkGrid';
-import PortraitVideos from '../components/PortraitVideos'; // ضفنا ده
-import GraphicDesigns from '../components/GraphicDesigns'; // ضفنا ده
 import About from '../components/About'; 
+import BrandsShowcase from '../components/BrandsShowcase';
 import ContactFooter from '../components/ContactFooter';
 import FloatingContact from '../components/FloatingContact';
 import ScrollProgress from '../components/ScrollProgress';
@@ -14,7 +12,7 @@ import { useSiteContent } from '../lib/useSiteContent';
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { settings, projects } = useSiteContent();
+  const { settings } = useSiteContent();
 
   useEffect(() => {
     if ('scrollRestoration' in window.history) {
@@ -28,14 +26,11 @@ export default function Home() {
       <div className="noise-bg"></div>
       <ScrollProgress />
       <Header isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+      
       <Hero settings={settings} />
-      <WorkGrid projects={projects} />
-      
-      {/* الأقسام الجديدة */}
-      <PortraitVideos projects={projects} />
-      <GraphicDesigns projects={projects} />
-      
       <About settings={settings} />
+      <BrandsShowcase />
+      
       <ContactFooter settings={settings} />
       <FloatingContact settings={settings} />
     </div>

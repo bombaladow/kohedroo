@@ -20,7 +20,14 @@ export const metadata = {
     description: "Portfolio of Kohedroo - 13+ years of premium commercial branding.",
     url: "https://kohedroo.com",
     siteName: "Kohedroo",
-    images: [{ url: "/KOHEDROO.png", width: 800, height: 600, alt: "Kohedroo Logo" }],
+    images: [
+      {
+        url: "/KOHEDROO.png",
+        width: 800,
+        height: 600,
+        alt: "Kohedroo Logo",
+      },
+    ],
     locale: "en_US",
     type: "website",
   },
@@ -35,7 +42,8 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${cairo.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">
+      {/* ضفنا overflow-x-hidden هنا عشان نمنع أي سكرول أفقي يلخبط Lenis */}
+      <body className="min-h-full flex flex-col font-sans overflow-x-hidden">
         <LoadingProvider>
           <Preloader />
           <SmoothScroll>
