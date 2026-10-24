@@ -2,23 +2,32 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { useLoading } from '@/lib/LoadingContext'; // ضفنا ده
+import { useLoading } from '@/lib/LoadingContext';
 
 export default function Preloader() {
   const { isDataLoaded } = useLoading();
   const [minTimePassed, setMinTimePassed] = useState(false);
+  const [forceHide, setForceHide] = useState(false); // دراع الأمان
 
   useEffect(() => {
-    // الحد الأدنى لعرض الأنيميشن (2.5 ثانية)
+    // الحد الأدنى لعرض الأنيميشن (1.5 ثانية عشان ميبقاش طويل)
     const timer = setTimeout(() => {
       setMinTimePassed(true);
-    }, 2500);
+    }, 1500);
 
-    return () => clearTimeout(timer);
+    // دراع الأمان: لو مرت 4 ثواني والموقع لسه محملش، هتقفل الشاشة غصب عنها
+    const safetyTimer = setTimeout(() => {
+      setForceHide(true);
+    }, 4000);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(safetyTimer);
+    };
   }, []);
 
-  // هنخلي شاشة التحميل تظهر طول ما الوقت لسه مخلصش أو الداتا لسه مجتش
-  const showPreloader = !minTimePassed || !isDataLoaded;
+  // لو الوقت خلص أو الداتا جاهزة، أو دراع الأمان اشتغل، نخفي الشاشة
+  const showPreloader = (!minTimePassed || !isDataLoaded) && !forceHide;
 
   return (
     <AnimatePresence>
@@ -52,7 +61,7 @@ export default function Preloader() {
             <motion.div
               initial={{ clipPath: "inset(100% 0 0 0)" }}
               animate={{ clipPath: "inset(0% 0 0 0)" }}
-              transition={{ duration: 2.2, ease: "easeInOut" }}
+              transition={{ duration: 1.2, ease: "easeInOut" }}
               className="absolute inset-0"
             >
               <Image

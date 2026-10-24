@@ -1,19 +1,25 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
+import { useLoading } from '@/lib/LoadingContext'; // ضفنا ده
 
 export default function LoginPage() {
+  const { setIsDataLoaded } = useLoading(); // ضفنا ده
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const router = useRouter();
 
-  // تسجيل الدخول بجوجل
+  // أول ما الصفحة تفتح، بنقفل شاشة التحميل
+  useEffect(() => {
+    setIsDataLoaded(true);
+  }, [setIsDataLoaded]);
+
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
@@ -30,7 +36,6 @@ export default function LoginPage() {
     }
   };
 
-  // تسجيل الدخول بالإيميل والباسورد (لو حبيت تعمله)
   const handleEmailLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -51,7 +56,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 relative overflow-hidden">
-      {/* خلفية فنية */}
       <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-indigo-500/10 rounded-full blur-[100px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-emerald-500/10 rounded-full blur-[100px]" />
 
@@ -74,7 +78,6 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* زرار جوجل */}
         <button
           onClick={handleGoogleLogin}
           disabled={loading}
@@ -95,7 +98,6 @@ export default function LoginPage() {
           <div className="flex-1 h-[1px] bg-slate-200" />
         </div>
 
-        {/* فورم الإيميل */}
         <form onSubmit={handleEmailLogin} className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
