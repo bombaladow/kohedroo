@@ -30,25 +30,19 @@ export default function ContactFooter({ settings }) {
     lenis?.scrollTo(0, { duration: 1.5 });
   };
 
-  // إعدادات الأنيميشن للأيقونات
-  const socialContainerVariants = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3,
-      }
-    }
-  };
-
+  // إعدادات تنطيط سريعة جداً
   const socialItemVariants = {
-    hidden: { opacity: 0, y: 20, scale: 0.8 },
+    hidden: { opacity: 0, y: 30, scale: 0.6 },
     show: { 
       opacity: 1, 
       y: 0, 
       scale: 1,
-      transition: { type: "spring", stiffness: 300, damping: 20 }
+      transition: { 
+        type: "spring", 
+        stiffness: 500, 
+        damping: 20,    
+        mass: 0.5
+      }
     }
   };
 
@@ -149,13 +143,18 @@ export default function ContactFooter({ settings }) {
             ))}
           </nav>
 
-          {/* 🔥 أيقونات السوشيال ميديا الجديدة 🔥 */}
+          {/* 🔥 تعديل السوشيال ميديا عشان يظهروا بسرعة جداً 🔥 */}
           <motion.div 
-            variants={socialContainerVariants}
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true }}
-            className="flex items-center gap-3 md:gap-4"
+            viewport={{ once: true, amount: 0.1 }} // التعديل هنا: أول ما يبان أي جزء
+            variants={{
+              hidden: {},
+              show: {
+                transition: { staggerChildren: 0.08, delayChildren: 0.1 } // التعديل هنا: سرعة الترتيب
+              }
+            }}
+            className="flex items-center gap-8 md:gap-10"
           >
             {socials.map((social) => (
               <motion.a
@@ -165,19 +164,16 @@ export default function ContactFooter({ settings }) {
                 rel="noopener noreferrer"
                 aria-label={social.name}
                 variants={socialItemVariants}
-                whileHover={{ y: -5, scale: 1.1 }}
+                whileHover={{ y: -8, scale: 1.15 }}
                 whileTap={{ scale: 0.9 }}
-                className="relative w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group overflow-hidden transition-colors hover:bg-white/10"
+                className="relative group"
               >
-                {/* تأثير لمعان خلفي عند الهوفر */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
                 <Image
                   src={social.icon}
                   alt={social.name}
-                  width={22}
-                  height={22}
-                  className="w-5 h-5 md:w-6 md:h-6 object-contain invert group-hover:invert-0 transition-all duration-300 relative z-10"
+                  width={40}
+                  height={40}
+                  className="w-10 h-10 md:w-12 md:h-12 object-contain invert opacity-70 group-hover:opacity-100 transition-all duration-300"
                 />
               </motion.a>
             ))}
