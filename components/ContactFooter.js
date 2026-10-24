@@ -30,6 +30,28 @@ export default function ContactFooter({ settings }) {
     lenis?.scrollTo(0, { duration: 1.5 });
   };
 
+  // إعدادات الأنيميشن للأيقونات
+  const socialContainerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.3,
+      }
+    }
+  };
+
+  const socialItemVariants = {
+    hidden: { opacity: 0, y: 20, scale: 0.8 },
+    show: { 
+      opacity: 1, 
+      y: 0, 
+      scale: 1,
+      transition: { type: "spring", stiffness: 300, damping: 20 }
+    }
+  };
+
   return (
     <footer
       id="contact"
@@ -127,26 +149,39 @@ export default function ContactFooter({ settings }) {
             ))}
           </nav>
 
-          <div className="flex items-center gap-3">
+          {/* 🔥 أيقونات السوشيال ميديا الجديدة 🔥 */}
+          <motion.div 
+            variants={socialContainerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true }}
+            className="flex items-center gap-3 md:gap-4"
+          >
             {socials.map((social) => (
-              <a
+              <motion.a
                 key={social.name}
                 href={social.href}
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={social.name}
-                className="w-11 h-11 md:w-12 md:h-12 rounded-full bg-white/5 hover:bg-white border border-white/10 flex items-center justify-center transition-all duration-300 group active:scale-90"
+                variants={socialItemVariants}
+                whileHover={{ y: -5, scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                className="relative w-12 h-12 md:w-14 md:h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center group overflow-hidden transition-colors hover:bg-white/10"
               >
+                {/* تأثير لمعان خلفي عند الهوفر */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                
                 <Image
                   src={social.icon}
                   alt={social.name}
-                  width={18}
-                  height={18}
-                  className="w-4 h-4 object-contain invert group-hover:invert-0 transition-all duration-300"
+                  width={22}
+                  height={22}
+                  className="w-5 h-5 md:w-6 md:h-6 object-contain invert group-hover:invert-0 transition-all duration-300 relative z-10"
                 />
-              </a>
+              </motion.a>
             ))}
-          </div>
+          </motion.div>
         </div>
 
         {/* === 5. Location + Time Bar === */}
