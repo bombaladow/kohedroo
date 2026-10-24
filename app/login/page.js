@@ -5,17 +5,16 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
-import { useLoading } from '@/lib/LoadingContext'; // ضفنا ده
+import { useLoading } from '@/lib/LoadingContext';
 
 export default function LoginPage() {
-  const { setIsDataLoaded } = useLoading(); // ضفنا ده
+  const { setIsDataLoaded } = useLoading();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const router = useRouter();
 
-  // أول ما الصفحة تفتح، بنقفل شاشة التحميل
   useEffect(() => {
     setIsDataLoaded(true);
   }, [setIsDataLoaded]);
@@ -27,6 +26,9 @@ export default function LoginPage() {
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/admin`,
+          queryParams: {
+            prompt: 'select_account', // 🛑 ده اللي بيجبر جوجل يفتح شاشة اختيار الحساب
+          }
         },
       });
       if (error) throw error;
