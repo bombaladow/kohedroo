@@ -16,7 +16,6 @@ export default function Hero({ settings }) {
     <section className="pt-32 md:pt-40 pb-20 px-6 md:px-12 flex flex-col justify-center items-center text-center overflow-hidden min-h-[85vh]">
       <div className="max-w-4xl flex flex-col items-center">
         
-        {/* اللوجو الرئيسي */}
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -32,7 +31,6 @@ export default function Hero({ settings }) {
           />
         </motion.div>
 
-        {/* النبذة المختصرة */}
         <motion.p
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -43,7 +41,6 @@ export default function Hero({ settings }) {
             'Art Director & AI Creative Lead with 13+ years driving visual storytelling, AI production, and premium commercial branding across Dubai & Egypt.'}
         </motion.p>
 
-        {/* الأزرار */}
         <motion.div
           initial="hidden"
           animate="visible"
@@ -80,7 +77,6 @@ export default function Hero({ settings }) {
         </motion.div>
       </div>
 
-      {/* الإحصائيات */}
       <motion.div
         initial="hidden"
         animate="visible"

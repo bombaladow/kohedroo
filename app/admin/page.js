@@ -59,10 +59,23 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     setIsDataLoaded(true);
+
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) router.push("/login");
-      else {
+      
+      if (!session) {
+        router.push("/login");
+      } else {
+        // 🛑 حماية الداش بورد: غير الإيميل ده لإيميل أخوك الحقيقي
+        const ADMIN_EMAIL = "your-brother-email@gmail.com"; 
+
+        if (session.user.email !== ADMIN_EMAIL) {
+          await supabase.auth.signOut();
+          router.push("/login");
+          toast.error("Unauthorized access.");
+          return;
+        }
+
         setUser(session.user);
         fetchAllData();
       }
@@ -305,7 +318,6 @@ export default function AdminDashboard() {
 
       {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
 
-      {/* السايدبار بقى ثابت (sticky) وطوله قد الشاشة عشان يظبط السكرول */}
       <div className={`fixed md:sticky top-0 inset-y-0 left-0 z-50 w-64 h-screen bg-slate-900 text-slate-300 transform transition-transform duration-300 flex flex-col ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
         <div className="p-6 flex items-center justify-between">
           <h2 className="text-2xl font-extrabold text-white tracking-tighter">Kohedroo<span className="text-indigo-500">.</span></h2>
@@ -336,7 +348,6 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* المحتوى الرئيسي شيلنا منه overflow-y-auto عشان السكرول يشتغل طبيعي */}
       <div className="flex-1 flex flex-col min-w-0 relative">
         <header className="bg-white border-b border-slate-200 p-4 md:px-8 flex items-center justify-between sticky top-0 z-30">
           <div className="flex items-center gap-4 flex-1">
@@ -367,10 +378,6 @@ export default function AdminDashboard() {
         </header>
 
         <main className="p-4 md:p-8">
-          {/* ... (باقي الكود بتاع الـ Overview والفورم والقوائم زي ما هو بالظبط من الرسالة اللي فاتت) ... */}
-          {/* عشان الكود ميبقاش طويل جداً، أنا مش هعيد كتابة الـ forms والـ tables تاني، هي هي نفسها اللي في الرسالة اللي فاتت بالظبط، بس إنت خد الملف ده كامل من هنا لتحت */}
-          
-          {/* ... (نفس كود الـ Overview) ... */}
           {activeTab === "overview" && (
              <div className="space-y-6">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -395,7 +402,6 @@ export default function AdminDashboard() {
            </div>
           )}
 
-          {/* ... (نفس كود الـ Form) ... */}
           {isFormOpen && activeTab !== "overview" && (
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-lg mb-8 relative">
               <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500 bg-slate-100 hover:bg-red-50 p-2 rounded-full transition-colors"><X size={20}/></button>
@@ -567,7 +573,6 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* ... (نفس كود الـ Lists) ... */}
           {activeTab !== "overview" && activeTab !== "about" && activeTab !== "content" && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
               
