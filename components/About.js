@@ -3,10 +3,14 @@ import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import AnimatedCounter from './AnimatedCounter'; // ضفنا العداد
 
 export default function About({ settings }) {
   const skillsString = settings?.about_skills || 'Art Direction, AI Commercial Videos, Brand Identity, Visual Storytelling, Social Media Campaigns';
   const skills = skillsString.split(',').map(s => s.trim());
+  
+  const years = settings?.stat_years || '13+';
+  const projects = settings?.stat_projects || '100+';
 
   return (
     <section id="about" className="relative z-10 bg-zinc-50 pt-16 pb-20 md:py-28">
@@ -36,12 +40,16 @@ export default function About({ settings }) {
 
           <div className="flex justify-between border-t border-black/10 pt-6 mb-6">
             <div className="text-center">
-              <p className="text-3xl font-extrabold">{settings?.stat_years || '13+'}</p>
+              <p className="text-3xl font-extrabold">
+                <AnimatedCounter value={years} />
+              </p>
               <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mt-1">Years Exp.</p>
             </div>
             <div className="w-[1px] bg-black/10" />
             <div className="text-center">
-              <p className="text-3xl font-extrabold">{settings?.stat_projects || '100+'}</p>
+              <p className="text-3xl font-extrabold">
+                <AnimatedCounter value={projects} />
+              </p>
               <p className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider mt-1">Projects</p>
             </div>
           </div>
@@ -121,11 +129,15 @@ export default function About({ settings }) {
 
             <div className="flex gap-10 border-t border-black/10 pt-8 mb-8">
               <div>
-                <p className="text-4xl font-extrabold">{settings?.stat_years || '13+'}</p>
+                <p className="text-4xl font-extrabold">
+                  <AnimatedCounter value={years} />
+                </p>
                 <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mt-1">Years Exp.</p>
               </div>
               <div>
-                <p className="text-4xl font-extrabold">{settings?.stat_projects || '100+'}</p>
+                <p className="text-4xl font-extrabold">
+                  <AnimatedCounter value={projects} />
+                </p>
                 <p className="text-xs font-mono text-zinc-500 uppercase tracking-wider mt-1">Projects Done</p>
               </div>
             </div>

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowDown, MessageSquare } from 'lucide-react';
 import MagneticButton from './MagneticButton';
+import AnimatedCounter from './AnimatedCounter'; // ضفنا العداد
 
 export default function Hero({ settings }) {
   const stats = [
@@ -84,7 +85,11 @@ export default function Hero({ settings }) {
             className="flex flex-col items-center"
           >
             <span className="text-2xl md:text-5xl font-extrabold tracking-tighter text-black font-sans leading-none">
-              {value}
+              {value.includes('+') ? (
+                <AnimatedCounter value={value} />
+              ) : (
+                value
+              )}
             </span>
             <span className="text-zinc-500 text-[9px] md:text-xs font-mono uppercase tracking-widest font-semibold mt-2">
               {label}
