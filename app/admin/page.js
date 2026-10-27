@@ -11,6 +11,8 @@ import {
 import { motion, Reorder } from "framer-motion";
 import { toast } from 'sonner';
 import imageCompression from 'browser-image-compression';
+import { FFmpeg } from '@ffmpeg/ffmpeg'; // ضفنا ده
+import { fetchFile, toBlobURL } from '@ffmpeg/util'; // ضفنا ده
 import ConfirmModal from "@/components/ConfirmModal";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useLoading } from "@/lib/LoadingContext";
@@ -41,7 +43,6 @@ export default function AdminDashboard() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const router = useRouter();
 
-  // States للبيانات
   const [projects, setProjects] = useState([]);
   const [brands, setBrands] = useState([]);
   const [clients, setClients] = useState([]);
@@ -49,42 +50,35 @@ export default function AdminDashboard() {
   const [bookings, setBookings] = useState([]);
   const [siteContent, setSiteContent] = useState({});
   
-  // States للبحث والمودال والـ Lightbox
   const [searchQuery, setSearchQuery] = useState("");
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: "", message: "", action: null, isDestructive: true });
   const [lightboxImage, setLightboxImage] = useState(null);
 
-  // States للفورم
   const [formData, setFormData] = useState({});
   const [file, setFile] = useState(null);
-  const [coverFile, setCoverFile] = useState(null); // صورة غلاف الشركة
+  const [coverFile, setCoverFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     setIsDataLoaded(true);
-
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (!session) {
         router.push("/login");
       } else {
-        // 🛑 الإيميلات المسموح لها بالدخول (أنت وأخوك)
         const ALLOWED_EMAILS = [
           "mahmoudabdelaziz20378@gmail.com",
           "bombaladow@gmail.com",
           "kohedroo@gmail.com"
         ];
-
         if (!ALLOWED_EMAILS.includes(session.user.email)) {
           await supabase.auth.signOut();
           router.push("/login");
           toast.error("Unauthorized access. You are not an admin.");
           return;
         }
-
         setUser(session.user);
         fetchAllData();
       }
@@ -141,9 +135,37 @@ export default function AdminDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🖼️ دالة رفع الصور مع الضغط
+  // 🎥 دالة ضغط الفيديو (جديدة)
+  const compressVideo = async (file) => {
+    if (file.size < 10 * 1024 * 1024) return file; // لو الفيديو صغير (أقل من 10 ميجا) سيبه زي ما هو
+    
+    toast.info("Compressing video... This might take a minute.", { duration: 6000 });
+    const ffmpeg = new FFmpeg();
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    
+    try {
+      await ffmpeg.load({
+        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+      });
+
+      await ffmpeg.writeFile('input.mp4', await fetchFile(file));
+      // ضغط الفيديو بجودة معقولة
+      await ffmpeg.exec(['-i', 'input.mp4', '-vcodec', 'libx264', '-crf', '28', 'output.mp4']);
+      
+      const data = await ffmpeg.readFile('output.mp4');
+      return new File([data.buffer], file.name, { type: 'video/mp4' });
+    } catch (error) {
+      console.warn("Video compression failed, uploading original.", error);
+      return file; // لو فشل الضغط، نرفع الأصلي
+    }
+  };
+
+  // 🖼️ دالة رفع الصور (بتضغط صور وبتضغط فيديو)
   const uploadMedia = async (file, bucket = 'portfolio-media') => {
     let fileToUpload = file;
+    
+    // لو الملف صورة، استخدم مكتبة الصور
     if (file.type.startsWith('image/')) {
       try {
         const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
@@ -151,6 +173,10 @@ export default function AdminDashboard() {
       } catch (error) {
         console.warn("Image compression failed", error);
       }
+    } 
+    // لو الملف فيديو، استخدم مكتبة FFmpeg
+    else if (file.type.startsWith('video/')) {
+      fileToUpload = await compressVideo(file);
     }
 
     const fileExt = fileToUpload.name.split('.').pop();
@@ -265,26 +291,17 @@ export default function AdminDashboard() {
 
   const exportClientsToCSV = () => {
     if (clients.length === 0) return toast.error("No clients to export");
-    
     const headers = ["Name", "Email", "Phone", "Company", "Status", "Date Joined"];
     const csvData = clients.map(c => [
-      `"${c.name || ''}"`,
-      `"${c.email || ''}"`,
-      `"${c.phone || ''}"`,
-      `"${c.company || ''}"`,
-      `"${c.status || ''}"`,
-      `"${new Date(c.created_at).toLocaleDateString()}"`
+      `"${c.name || ''}"`, `"${c.email || ''}"`, `"${c.phone || ''}"`, `"${c.company || ''}"`, `"${c.status || ''}"`, `"${new Date(c.created_at).toLocaleDateString()}"`
     ]);
-
     const csvContent = [headers.join(","), ...csvData.map(row => row.join(","))].join("\n");
     const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", `kohedroo_clients_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    document.body.appendChild(link); link.click(); document.body.removeChild(link);
     toast.success("Clients exported successfully!");
   };
 
@@ -393,7 +410,6 @@ export default function AdminDashboard() {
         </header>
 
         <main className="p-4 md:p-8">
-          {/* 1. Overview Tab */}
           {activeTab === "overview" && (
              <div className="space-y-6">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -418,7 +434,6 @@ export default function AdminDashboard() {
            </div>
           )}
 
-          {/* 2. Form Section */}
           {isFormOpen && activeTab !== "overview" && (
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-lg mb-8 relative">
               <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500 bg-slate-100 hover:bg-red-50 p-2 rounded-full transition-colors"><X size={20}/></button>
@@ -492,7 +507,7 @@ export default function AdminDashboard() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Media</label>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Media (Auto-compresses)</label>
                       <input type="file" accept="image/*,video/*" className="input" onChange={(e) => setFile(e.target.files[0])} required={!editingId} />
                     </div>
                   </div>
@@ -584,7 +599,7 @@ export default function AdminDashboard() {
 
                 <div className="flex gap-3 pt-4 border-t border-slate-100">
                   <button type="submit" disabled={loading} className="btn-primary flex-1 md:flex-none px-8">
-                    {loading ? "Saving..." : "Save Data"}
+                    {loading ? "Saving & Compressing..." : "Save Data"}
                   </button>
                   <button type="button" onClick={() => setIsFormOpen(false)} className="bg-slate-100 text-slate-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-slate-200 transition-colors">
                     Cancel
@@ -594,7 +609,6 @@ export default function AdminDashboard() {
             </motion.div>
           )}
 
-          {/* 3. Lists and Tables */}
           {activeTab !== "overview" && activeTab !== "about" && activeTab !== "content" && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
               
@@ -765,7 +779,6 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* 4. Site Content Table */}
           {activeTab === "content" && (
              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 overflow-x-auto">
                <div className="flex justify-between items-center mb-6">
@@ -805,7 +818,6 @@ export default function AdminDashboard() {
              </div>
           )}
           
-          {/* 5. About Section */}
           {activeTab === "about" && !isFormOpen && (
             <div className="bg-white p-10 rounded-2xl border border-slate-200 shadow-sm text-center">
               <UserCircle size={48} className="mx-auto text-indigo-500 mb-4 opacity-50" />
