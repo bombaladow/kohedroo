@@ -1,9 +1,8 @@
 'use client';
 import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
-import AnimatedCounter from './AnimatedCounter'; // ضفنا العداد
+import AnimatedCounter from './AnimatedCounter'; // العداد
 
 export default function About({ settings }) {
   const skillsString = settings?.about_skills || 'Art Direction, AI Commercial Videos, Brand Identity, Visual Storytelling, Social Media Campaigns';
@@ -24,12 +23,12 @@ export default function About({ settings }) {
           </h3>
         </div>
 
+        {/* استخدمنا img العادي هنا */}
         <div className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden bg-zinc-200 mb-6 shadow-xl">
-          <Image
+          <img
             src={settings?.about_image || '/about-image.jpg'}
             alt="Kohedroo"
-            fill
-            className="object-cover"
+            className="w-full h-full object-cover"
           />
         </div>
 
@@ -86,11 +85,11 @@ export default function About({ settings }) {
           >
             <div className="absolute inset-0 border-2 border-black translate-x-4 translate-y-4 rounded-3xl -z-10 max-w-sm mx-auto" />
             <div className="relative aspect-[4/5] w-full max-w-sm rounded-3xl overflow-hidden bg-zinc-100 shadow-lg">
-              <Image
+              {/* استخدمنا img العادي هنا كمان */}
+              <img
                 src={settings?.about_image || '/about-image.jpg'}
                 alt="Kohedroo - Art Director"
-                fill
-                className="object-cover grayscale hover:grayscale-0 transition-all duration-700"
+                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
               />
             </div>
           </motion.div>
