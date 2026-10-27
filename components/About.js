@@ -1,8 +1,9 @@
 'use client';
 import { motion } from 'framer-motion';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, CheckCircle2, User } from 'lucide-react'; // ضفنا User
 import Link from 'next/link';
-import AnimatedCounter from './AnimatedCounter'; // العداد
+import AnimatedCounter from './AnimatedCounter';
+import { useEffect } from 'react'; // ضفنا useEffect
 
 export default function About({ settings }) {
   const skillsString = settings?.about_skills || 'Art Direction, AI Commercial Videos, Brand Identity, Visual Storytelling, Social Media Campaigns';
@@ -10,6 +11,12 @@ export default function About({ settings }) {
   
   const years = settings?.stat_years || '13+';
   const projects = settings?.stat_projects || '100+';
+  const aboutImage = settings?.about_image;
+
+  // عشان نتأكد إن اللينك واصل من الداتابيز
+  useEffect(() => {
+    console.log("🔗 رابط صورة الأبوت القادم من الداتابيز:", aboutImage);
+  }, [aboutImage]);
 
   return (
     <section id="about" className="relative z-10 bg-zinc-50 pt-16 pb-20 md:py-28">
@@ -23,16 +30,29 @@ export default function About({ settings }) {
           </h3>
         </div>
 
-        {/* استخدمنا img العادي هنا */}
-        <div className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden bg-zinc-200 mb-6 shadow-xl">
-          <img
-            src={settings?.about_image || '/about-image.jpg'}
-            alt="Kohedroo"
-            className="w-full h-full object-cover"
-          />
+        {/* حاوية الصورة */}
+        <div className="relative w-full aspect-[4/5] rounded-[2rem] overflow-hidden bg-zinc-100 mb-6 shadow-xl">
+          {/* الصورة البديلة (تظهر لو مفيش صورة أو اللينك باظ) */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-400">
+            <User size={64} className="mb-2 opacity-30" />
+            <span className="text-xs font-mono uppercase tracking-widest opacity-50">Profile Image</span>
+          </div>
+
+          {/* الصورة الحقيقية */}
+          {aboutImage && (
+            <img
+              src={aboutImage}
+              alt="Kohedroo"
+              className="absolute inset-0 w-full h-full object-cover z-10"
+              onError={(e) => {
+                e.target.style.display = 'none'; // لو الصورة باظت، اخفيها عشان البديلة تبان
+                console.error("❌ فشل تحميل الصورة من الرابط:", aboutImage);
+              }}
+            />
+          )}
         </div>
 
-        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-black/5 -mt-12 relative z-10 mx-2">
+        <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-black/5 -mt-12 relative z-20 mx-2">
           <p className="text-zinc-600 text-sm leading-relaxed mb-6">
             {settings?.about_bio || "I am an Art Director and AI Creative Lead with over 13 years of experience..."}
           </p>
@@ -84,13 +104,27 @@ export default function About({ settings }) {
             className="relative col-span-5 flex justify-center"
           >
             <div className="absolute inset-0 border-2 border-black translate-x-4 translate-y-4 rounded-3xl -z-10 max-w-sm mx-auto" />
+            
+            {/* حاوية الصورة */}
             <div className="relative aspect-[4/5] w-full max-w-sm rounded-3xl overflow-hidden bg-zinc-100 shadow-lg">
-              {/* استخدمنا img العادي هنا كمان */}
-              <img
-                src={settings?.about_image || '/about-image.jpg'}
-                alt="Kohedroo - Art Director"
-                className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
-              />
+              {/* الصورة البديلة */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-zinc-400">
+                <User size={64} className="mb-2 opacity-30" />
+                <span className="text-xs font-mono uppercase tracking-widest opacity-50">Profile Image</span>
+              </div>
+
+              {/* الصورة الحقيقية */}
+              {aboutImage && (
+                <img
+                  src={aboutImage}
+                  alt="Kohedroo - Art Director"
+                  className="absolute inset-0 w-full h-full object-cover z-10 grayscale hover:grayscale-0 transition-all duration-700"
+                  onError={(e) => {
+                    e.target.style.display = 'none'; // لو الصورة باظت، اخفيها عشان البديلة تبان
+                    console.error("❌ فشل تحميل الصورة من الرابط:", aboutImage);
+                  }}
+                />
+              )}
             </div>
           </motion.div>
 
