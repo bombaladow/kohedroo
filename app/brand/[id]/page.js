@@ -153,9 +153,9 @@ export default function BrandPage() {
         </Link>
 
         <div className={styles.heroCenter}>
-          <h1 className={styles.logo} style={brand.logo_bg ? { background: brand.logo_bg } : undefined}>
-            {brand.logo_url ? <img src={brand.logo_url} alt={brand.name} /> : brand.name}
-          </h1>
+          <div className={styles.logo}>
+            {brand.logo_url && <img src={brand.logo_url} alt="" />}
+          </div>
           <p className={`${styles.mono} ${styles.worksCount}`}>
             {projects.length} {projects.length === 1 ? 'Work' : 'Works'}
           </p>
