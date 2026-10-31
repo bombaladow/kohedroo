@@ -92,7 +92,7 @@ export default function AdminDashboard() {
       supabase.from("brands").select("*").order("sort_order", { ascending: true }),
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("packages").select("*").order("sort_order", { ascending: true }),
-      supabase.from("bookings").select(`*, clients(name, phone), packages(name)`).order("created_at", { ascending: false }),
+      supabase.from("bookings").select(`*, clients(name, phone), packages(title)`).order("created_at", { ascending: false }),
       supabase.from("site_content").select("*")
     ]);
 
@@ -121,7 +121,6 @@ export default function AdminDashboard() {
   const handleOpenForm = (data = null) => {
     if (data) {
       setFormData(data);
-      if (data.features) setFormData(prev => ({ ...prev, features: data.features.join(', ') }));
       setEditingId(data.id);
     } else {
       const defaults = {};
@@ -221,8 +220,11 @@ export default function AdminDashboard() {
         else await supabase.from("clients").insert([formData]);
       } 
       else if (activeTab === "packages") {
-        const featuresArray = formData.features ? formData.features.split(',').map(f => f.trim()) : [];
-        const data = { ...formData, features: featuresArray };
+        const data = {
+          title: formData.title,
+          price: formData.price || null,
+          features: formData.features || '',
+        };
         if (!editingId) data.sort_order = packages.length;
         if (editingId) await supabase.from("packages").update(data).eq("id", editingId);
         else await supabase.from("packages").insert([data]);
@@ -549,9 +551,9 @@ export default function AdminDashboard() {
 
                 {activeTab === "packages" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Package Name *</label><input type="text" placeholder="e.g. Gold Package" className="input" required value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} /></div>
-                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Price ($)</label><input type="number" placeholder="500" className="input" value={formData.price || ''} onChange={(e) => setFormData({...formData, price: e.target.value})} /></div>
-                    <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-2">Features (comma separated)</label><input type="text" placeholder="Logo Design, Social Media Kit, 2 Revisions" className="input" value={formData.features || ''} onChange={(e) => setFormData({...formData, features: e.target.value})} /></div>
+                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Package Name *</label><input type="text" placeholder="e.g. Gold Package" className="input" required value={formData.title || ''} onChange={(e) => setFormData({...formData, title: e.target.value})} /></div>
+                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Price (text, e.g. $500 or $300/mo)</label><input type="text" placeholder="$500" className="input" value={formData.price || ''} onChange={(e) => setFormData({...formData, price: e.target.value})} /></div>
+                    <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-2">Features (one per line)</label><textarea rows="5" placeholder={"Logo Design\nSocial Media Kit\n2 Revisions"} className="input" value={formData.features || ''} onChange={(e) => setFormData({...formData, features: e.target.value})} /></div>
                   </div>
                 )}
 
@@ -568,7 +570,7 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Package</label>
                       <select className="input" value={formData.package_id || ''} onChange={(e) => setFormData({...formData, package_id: e.target.value})}>
                         <option value="">Select Package</option>
-                        {packages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        {packages.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
                       </select>
                     </div>
                     <div><label className="block text-sm font-semibold text-slate-700 mb-2">Date *</label><input type="date" className="input" required value={formData.date || ''} onChange={(e) => setFormData({...formData, date: e.target.value})} /></div>
@@ -680,13 +682,13 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-4">
                           <GripVertical size={20} className="text-slate-300" />
                           <div>
-                            <p className="font-bold text-slate-800">{p.name}</p>
-                            <p className="text-xs text-slate-500">${p.price}</p>
+                            <p className="font-bold text-slate-800">{p.title}</p>
+                            <p className="text-xs text-slate-500">{p.price}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => handleOpenForm(p)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil size={16}/></button>
-                          <button onClick={() => handleDeleteClick("packages", p.id, p.name)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
+                          <button onClick={() => handleDeleteClick("packages", p.id, p.title)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
                         </div>
                       </Reorder.Item>
                     ))}
@@ -752,7 +754,7 @@ export default function AdminDashboard() {
                           <tr key={b.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="p-4">
                               <p className="font-bold text-slate-800">{b.clients?.name || 'Unknown'}</p>
-                              <p className="text-xs text-slate-500">{b.packages?.name || 'No Package'}</p>
+                              <p className="text-xs text-slate-500">{b.packages?.title || 'No Package'}</p>
                             </td>
                             <td className="p-4 text-sm text-slate-600">{b.date} at {b.time}</td>
                             <td className="p-4">

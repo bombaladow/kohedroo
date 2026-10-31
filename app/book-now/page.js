@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useLoading } from '@/lib/LoadingContext';
+import { toast } from 'sonner';
 
 export default function BookNow() {
   const { setIsDataLoaded } = useLoading();
@@ -17,29 +18,46 @@ export default function BookNow() {
     setIsDataLoaded(true);
 
     const fetchPackages = async () => {
-      const { data } = await supabase.from('packages').select('*').eq('is_active', true);
+      const { data } = await supabase
+        .from('packages')
+        .select('*')
+        .order('sort_order', { ascending: true });
       setPackages(data || []);
     };
     fetchPackages();
   }, [setIsDataLoaded]);
 
+  // price column is free text ("$300/mo", "Custom", or just "500")
+  const formatPrice = (price) => {
+    if (!price) return '';
+    const value = String(price).trim();
+    return /^\d+(\.\d+)?$/.test(value) ? `$${value}` : value;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data: clientData, error: clientError } = await supabase
+      // Visitors are allowed to INSERT but not SELECT on `clients` (RLS),
+      // so we generate the id here instead of asking Supabase to return the row.
+      const clientId = crypto.randomUUID();
+
+      const { error: clientError } = await supabase
         .from('clients')
-        .insert([{ name: formData.name, email: formData.email, phone: formData.phone, status: 'Lead' }])
-        .select()
-        .single();
-      
+        .insert([{
+          id: clientId,
+          name: formData.name,
+          email: formData.email || null,
+          phone: formData.phone,
+          status: 'Lead'
+        }]);
+
       if (clientError) throw clientError;
-      if (!clientData) throw new Error("Failed to save client data.");
 
       const { error: bookingError } = await supabase
         .from('bookings')
         .insert([{
-          client_id: clientData.id,
+          client_id: clientId,
           package_id: formData.package_id || null,
           date: formData.date,
           time: formData.time || '12:00:00',
@@ -50,7 +68,8 @@ export default function BookNow() {
       if (bookingError) throw bookingError;
       setSuccess(true);
     } catch (error) {
-      alert("Error during booking: " + error.message);
+      console.error('Booking failed:', error);
+      toast.error('Something went wrong while sending your booking. Please try again or contact us on WhatsApp.');
     } finally {
       setLoading(false);
     }
@@ -102,7 +121,9 @@ export default function BookNow() {
                 <select className="input" value={formData.package_id} onChange={(e) => setFormData({...formData, package_id: e.target.value})}>
                   <option value="">No specific package</option>
                   {packages.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name} - ${p.price}</option>
+                    <option key={p.id} value={p.id}>
+                      {p.title}{p.price ? ` - ${formatPrice(p.price)}` : ''}
+                    </option>
                   ))}
                 </select>
               </div>

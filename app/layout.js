@@ -1,4 +1,5 @@
 import { Cairo } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import SmoothScroll from "@/components/SmoothScroll";
 import Preloader from "@/components/Preloader";
@@ -9,6 +10,23 @@ const cairo = Cairo({
   subsets: ["arabic", "latin"],
   weight: ["300", "400", "600", "700", "800"],
   variable: "--font-cairo",
+});
+
+// Self-hosted display + meta fonts (files live in app/fonts/)
+const display = localFont({
+  src: [
+    { path: "./fonts/InstrumentSerif-Regular.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/InstrumentSerif-Italic.woff2", weight: "400", style: "italic" },
+  ],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const meta = localFont({
+  src: "./fonts/GeistMono-Variable.woff2",
+  weight: "100 900",
+  variable: "--font-meta",
+  display: "swap",
 });
 
 export const metadata = {
@@ -41,8 +59,8 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${cairo.variable} h-full antialiased`}>
-      {/* ضفنا overflow-x-hidden هنا عشان نمنع أي سكرول أفقي يلخبط Lenis */}
+    <html lang="en" className={`${cairo.variable} ${display.variable} ${meta.variable} h-full antialiased`}>
+      {/* overflow-x-hidden prevents horizontal scroll from confusing Lenis */}
       <body className="min-h-full flex flex-col font-sans overflow-x-hidden">
         <LoadingProvider>
           <Preloader />
