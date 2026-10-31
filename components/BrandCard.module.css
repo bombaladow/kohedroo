@@ -1,0 +1,222 @@
+/* Design system 3: Bone & Oxblood
+   Fonts are self-hosted via next/font/local, exposed as:
+   --font-display (Instrument Serif), --font-mono (Geist Mono) */
+
+.section {
+  --bone: #efebe3;
+  --bone-deep: #e6e1d6;
+  --ink: #20241e;
+  --ink-soft: #5d6258;
+  --line: rgba(32, 36, 30, 0.16);
+  --oxblood: #7e2530;
+
+  background: var(--bone);
+  color: var(--ink);
+  padding: clamp(4rem, 9vw, 8rem) clamp(1.25rem, 5vw, 3rem);
+  border-top: 1px solid var(--line);
+}
+
+.inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Asymmetric header: label on the side, title large */
+.head {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: clamp(2rem, 5vw, 4rem);
+}
+
+@media (min-width: 768px) {
+  .head {
+    grid-template-columns: 220px 1fr;
+    align-items: end;
+  }
+}
+
+.eyebrow {
+  font-family: var(--font-meta, ui-monospace, monospace);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.title {
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(2.5rem, 6vw, 4.75rem);
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.title em {
+  font-style: italic;
+  color: var(--oxblood);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr;
+  border-top: 1px solid var(--line);
+}
+
+@media (min-width: 900px) {
+  .list {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 3rem;
+  }
+}
+
+.item {
+  border-bottom: 1px solid var(--line);
+}
+
+/* The card is one link / one button */
+.card {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.1rem 0.75rem 1.1rem 0;
+  color: inherit;
+  text-decoration: none;
+  position: relative;
+  transition: background-color 0.35s ease, color 0.35s ease,
+    padding 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.index {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.75rem;
+  font-family: var(--font-meta, ui-monospace, monospace);
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  color: var(--ink-soft);
+  transition: color 0.35s ease;
+}
+
+.logo {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  padding: 0.6rem;
+  background: #f8f6f1;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.logo img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.logoFallback {
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.75rem;
+  color: var(--oxblood);
+}
+
+.text {
+  min-width: 0;
+}
+
+.name {
+  font-family: var(--font-display, Georgia, serif);
+  font-weight: 400;
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.35rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-family: var(--font-meta, ui-monospace, monospace);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  transition: color 0.35s ease;
+}
+
+.arrow {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.35s ease, background-color 0.35s ease;
+}
+
+.arrow svg {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.5;
+}
+
+/* Hover only on devices that really hover, so touch does not get stuck */
+@media (hover: hover) {
+  .card:hover {
+    background: var(--oxblood);
+    color: var(--bone);
+    padding-left: 1rem;
+  }
+  .card:hover .meta,
+  .card:hover .index {
+    color: rgba(239, 235, 227, 0.72);
+  }
+  .card:hover .arrow {
+    transform: rotate(-45deg);
+    border-color: rgba(239, 235, 227, 0.5);
+  }
+}
+
+.card:active {
+  background: var(--bone-deep);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--oxblood);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .logo {
+    width: 60px;
+    height: 60px;
+  }
+  .arrow {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .arrow,
+  .meta,
+  .index {
+    transition: none;
+  }
+}
