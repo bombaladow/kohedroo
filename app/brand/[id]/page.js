@@ -131,14 +131,6 @@ export default function BrandPage() {
   const videos = useMemo(() => projects.filter((p) => p.type === 'video'), [projects]);
   const images = useMemo(() => projects.filter((p) => p.type !== 'video'), [projects]);
 
-  const yearsLabel = useMemo(() => {
-    const ys = projects.map((p) => parseInt(p.year, 10)).filter(Boolean);
-    if (ys.length === 0) return '-';
-    const min = Math.min(...ys);
-    const max = Math.max(...ys);
-    return min === max ? String(min) : `${min}-${String(max).slice(2)}`;
-  }, [projects]);
-
   const changeTab = (key) => {
     setTab(key);
     const url = new URL(window.location.href);
@@ -160,30 +152,13 @@ export default function BrandPage() {
           <span aria-hidden="true">&larr;</span> All brands
         </Link>
 
-        <div className={styles.heroGrid}>
-          <div>
-            <div className={styles.logo} style={brand.logo_bg ? { background: brand.logo_bg } : undefined}>
-              {brand.logo_url && <img src={brand.logo_url} alt="" />}
-            </div>
-            <span className={`${styles.mono} ${styles.eyebrow}`}>Client / Case study</span>
-            <h1 className={styles.name}>{brand.name}</h1>
-            {brand.description && <p className={styles.desc}>{brand.description}</p>}
-          </div>
-
-          <dl className={styles.stats}>
-            <div className={styles.stat}>
-              <dt className={styles.mono}>Motion</dt>
-              <dd>{videos.length}</dd>
-            </div>
-            <div className={styles.stat}>
-              <dt className={styles.mono}>Stills</dt>
-              <dd>{images.length}</dd>
-            </div>
-            <div className={styles.stat}>
-              <dt className={styles.mono}>Years</dt>
-              <dd>{yearsLabel}</dd>
-            </div>
-          </dl>
+        <div className={styles.heroCenter}>
+          <h1 className={styles.logo} style={brand.logo_bg ? { background: brand.logo_bg } : undefined}>
+            {brand.logo_url ? <img src={brand.logo_url} alt={brand.name} /> : brand.name}
+          </h1>
+          <p className={`${styles.mono} ${styles.worksCount}`}>
+            {projects.length} {projects.length === 1 ? 'Work' : 'Works'}
+          </p>
         </div>
       </header>
 
