@@ -15,7 +15,7 @@ const TABS = [
 ];
 
 function VideoTile({ project, onOpen }) {
-  // Orientation is read from the poster once it loads, so vertical
+  // Orientation is read from the video's first frame once its metadata loads, so vertical
   // and horizontal videos each keep their own shape in the masonry.
   const [ratio, setRatio] = useState('16 / 9');
 
@@ -27,14 +27,14 @@ function VideoTile({ project, onOpen }) {
       aria-label={`Play ${project.title}`}
     >
       <span className={`${styles.frame} ${styles.frameVideo}`} style={{ aspectRatio: ratio }}>
-        {project.media_url && (
-          <img
-            src={project.media_url}
-            alt=""
-            loading="lazy"
-            decoding="async"
-            onLoad={(e) => {
-              const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+        {(project.video_url || project.media_url) && (
+          <video
+            src={`${project.video_url || project.media_url}#t=0.1`}
+            muted
+            playsInline
+            preload="metadata"
+            onLoadedMetadata={(e) => {
+              const { videoWidth: w, videoHeight: h } = e.currentTarget;
               if (w && h) setRatio(`${w} / ${h}`);
             }}
           />

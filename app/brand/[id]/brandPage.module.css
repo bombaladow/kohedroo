@@ -262,14 +262,16 @@
   box-shadow: 0 1px 2px rgba(32, 36, 30, 0.05), 0 8px 24px -12px rgba(32, 36, 30, 0.18);
 }
 
-.frame img {
+.frame img,
+.frame video {
   display: block;
   width: 100%;
   height: auto;
   transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.frameVideo img {
+.frameVideo img,
+.frameVideo video {
   height: 100%;
   object-fit: cover;
 }
@@ -312,7 +314,7 @@
 .play svg { width: 14px; height: 14px; fill: currentColor; margin-left: 2px; }
 
 @media (hover: hover) {
-  .tile:hover .frame img { transform: scale(1.035); }
+  .tile:hover .frame img, .tile:hover .frame video { transform: scale(1.035); }
   .tile:hover .captionTitle { color: var(--oxblood); }
   .tile:hover .play { background: var(--oxblood); color: #fff; transform: scale(1.08); }
 }
@@ -332,5 +334,5 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .frame img, .tab::after, .play, .captionTitle { transition: none; }
+  .frame img, .frame video, .tab::after, .play, .captionTitle { transition: none; }
 }

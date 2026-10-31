@@ -14,6 +14,7 @@ import imageCompression from 'browser-image-compression';
 import { FFmpeg } from '@ffmpeg/ffmpeg'; // ضفنا ده
 import { fetchFile, toBlobURL } from '@ffmpeg/util'; // ضفنا ده
 import ConfirmModal from "@/components/ConfirmModal";
+import DropZone from "@/components/DropZone";
 import ImageLightbox from "@/components/ImageLightbox";
 import { useLoading } from "@/lib/LoadingContext";
 
@@ -60,6 +61,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [brandFilter, setBrandFilter] = useState("");
+  const [uploadQueue, setUploadQueue] = useState([]); // bulk drop: [{id,name,status}]
+  const [inlineEdit, setInlineEdit] = useState(null); // {id, value}
 
   useEffect(() => {
     setIsDataLoaded(true);
@@ -186,6 +190,56 @@ export default function AdminDashboard() {
     return publicUrl;
   };
 
+  // Drop many files at once: each becomes a project, saved immediately.
+  const handleBulkDrop = async (files) => {
+    const items = files.map((f, i) => ({ id: `${Date.now()}-${i}`, name: f.name, status: "waiting", file: f }));
+    setUploadQueue((q) => [...q, ...items.map(({ file, ...rest }) => rest)]);
+    const setStatus = (id, status) => setUploadQueue((q) => q.map((x) => (x.id === id ? { ...x, status } : x)));
+    let order = projects.length;
+    for (const it of items) {
+      setStatus(it.id, "uploading");
+      try {
+        const url = await uploadMedia(it.file);
+        const isVideo = it.file.type.startsWith("video/");
+        const row = {
+          title: it.file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || "Untitled",
+          type: isVideo ? "video" : "image",
+          media_url: url,
+          year: String(new Date().getFullYear()),
+          sort_order: order++,
+        };
+        if (isVideo) row.video_url = url;
+        if (brandFilter) row.brand_id = brandFilter;
+        const { error } = await supabase.from("projects").insert([row]);
+        if (error) throw error;
+        setStatus(it.id, "done");
+      } catch (err) {
+        setStatus(it.id, "error");
+        toast.error(`${it.name}: ${err.message}`);
+      }
+    }
+    await fetchAllData();
+    toast.success("Upload finished. Click a title to rename it.");
+    setTimeout(() => setUploadQueue((q) => q.filter((x) => x.status === "error")), 2500);
+  };
+
+  const saveInlineTitle = async () => {
+    if (!inlineEdit) return;
+    const title = inlineEdit.value.trim();
+    const current = projects.find((p) => p.id === inlineEdit.id);
+    setInlineEdit(null);
+    if (!title || title === current?.title) return;
+    setProjects((ps) => ps.map((p) => (p.id === current.id ? { ...p, title } : p)));
+    const { error } = await supabase.from("projects").update({ title }).eq("id", current.id);
+    if (error) toast.error("Error: " + error.message);
+  };
+
+  const changeProjectBrand = async (id, brand_id) => {
+    setProjects((ps) => ps.map((p) => (p.id === id ? { ...p, brand_id: brand_id || null } : p)));
+    const { error } = await supabase.from("projects").update({ brand_id: brand_id || null }).eq("id", id);
+    if (error) toast.error("Error: " + error.message);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -196,6 +250,7 @@ export default function AdminDashboard() {
       if (file) uploadedUrl = await uploadMedia(file);
       if (coverFile) uploadedCoverUrl = await uploadMedia(coverFile);
 
+      if (activeTab === "brands" && !editingId && !file) throw new Error("Please add the brand logo first.");
       if (activeTab === "projects") {
         const data = { ...formData };
         if (uploadedUrl) {
@@ -308,10 +363,12 @@ export default function AdminDashboard() {
   };
 
   const filteredProjects = useMemo(() => {
-    if (!searchQuery) return projects;
     const q = searchQuery.toLowerCase();
-    return projects.filter(p => p.title?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
-  }, [projects, searchQuery]);
+    return projects.filter(p =>
+      (!brandFilter || String(p.brand_id) === String(brandFilter)) &&
+      (!q || p.title?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q))
+    );
+  }, [projects, searchQuery, brandFilter]);
 
   const filteredClients = useMemo(() => {
     if (!searchQuery) return clients;
@@ -450,8 +507,7 @@ export default function AdminDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Profile Image</label>
-                      <input type="file" accept="image/*" className="input" onChange={(e) => setFile(e.target.files[0])} />
-                      {siteContent.about_image && <p className="text-xs text-emerald-500 mt-1">Image already uploaded. Upload a new one to replace.</p>}
+                      <DropZone accept="image/*" value={file} onChange={setFile} existingUrl={siteContent.about_image} compact label="Drop your photo here, or click" />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Main Headline</label>
@@ -509,8 +565,8 @@ export default function AdminDashboard() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Media (Auto-compresses)</label>
-                      <input type="file" accept="image/*,video/*" className="input" onChange={(e) => setFile(e.target.files[0])} required={!editingId} />
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Replace media (auto-compressed)</label>
+                      <DropZone accept="image/*,video/*" value={file} onChange={(f) => { setFile(f); if (f) setFormData((d) => ({ ...d, type: f.type.startsWith("video/") ? "video" : "image" })); }} existingUrl={formData.media_url} compact label="Drop image or video" />
                     </div>
                   </div>
                 )}
@@ -530,12 +586,16 @@ export default function AdminDashboard() {
                       <textarea placeholder="Short description about the work done for this brand..." className="input" rows="3" value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Logo (Transparent PNG) *</label>
-                      <input type="file" accept="image/*" className="input" onChange={(e) => setFile(e.target.files[0])} required={!editingId} />
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Logo (transparent PNG) *</label>
+                      <DropZone accept="image/*" value={file} onChange={setFile} existingUrl={formData.logo_url} compact label="Drop the logo here" />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Cover Image (Background)</label>
-                      <input type="file" accept="image/*" className="input" onChange={(e) => setCoverFile(e.target.files[0])} />
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Logo background (optional)</label>
+                      <div className="flex items-center gap-3">
+                        <input type="color" aria-label="Logo background colour" className="w-12 h-10 rounded border border-slate-300 bg-white p-1" value={formData.logo_bg || "#ffffff"} onChange={(e) => setFormData({ ...formData, logo_bg: e.target.value })} />
+                        {formData.logo_bg && <button type="button" className="text-xs text-slate-500 underline" onClick={() => setFormData({ ...formData, logo_bg: null })}>Reset</button>}
+                        <span className="text-xs text-slate-500">Use a dark colour for white logos.</span>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -618,30 +678,76 @@ export default function AdminDashboard() {
                 projects.length === 0 && !isFormOpen ? (
                   <EmptyState icon={Briefcase} title="No Projects Yet" description="Start building your portfolio by adding your first project. You can upload an image or video." btnText="Add First Project" onClick={() => handleOpenForm()} />
                 ) : (
+                  <>
+                  <div className="mb-4 space-y-3">
+                    <DropZone
+                      accept="image/*,video/*"
+                      multiple
+                      onFiles={handleBulkDrop}
+                      label="Drop images or videos here (as many as you want)"
+                      hint={brandFilter ? `They will be added to: ${brands.find((b) => String(b.id) === String(brandFilter))?.name}` : "Pick a brand below first to file them under it"}
+                    />
+                    {uploadQueue.length > 0 && (
+                      <ul className="text-xs space-y-1">
+                        {uploadQueue.map((u) => (
+                          <li key={u.id} className="flex justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
+                            <span className="truncate">{u.name}</span>
+                            <span className={u.status === "error" ? "text-red-600" : u.status === "done" ? "text-emerald-600" : "text-slate-500"}>
+                              {u.status === "waiting" ? "Waiting" : u.status === "uploading" ? "Uploading..." : u.status === "done" ? "Done" : "Failed"}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <label htmlFor="brandFilter" className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Brand</label>
+                      <select id="brandFilter" className="input !w-auto !py-2" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)}>
+                        <option value="">All brands</option>
+                        {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
+                      {(brandFilter || searchQuery) && <span className="text-xs text-slate-400">Reordering is off while filtering</span>}
+                    </div>
+                  </div>
                   <Reorder.Group axis="y" values={filteredProjects} onReorder={(newOrder) => handleReorder("projects", newOrder)} className="space-y-3">
                     {filteredProjects.map((p) => (
-                      <Reorder.Item key={p.id} value={p} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-colors">
+                      <Reorder.Item key={p.id} value={p} dragListener={!brandFilter && !searchQuery} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-colors">
                         <div className="flex items-center gap-4">
                           <GripVertical size={20} className="text-slate-300" />
                           <div className="w-12 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLightboxImage(p.media_url)}>
                             {p.type === 'video' ? (
-                               <div className="w-full h-full flex items-center justify-center bg-black text-white"><Briefcase size={16}/></div>
+                               <video src={`${p.video_url || p.media_url}#t=0.1`} muted preload="metadata" className="w-full h-full object-cover" />
                             ) : (
                                <img src={p.media_url} alt={p.title} className="w-full h-full object-cover" />
                             )}
                           </div>
                           <div>
-                            <p className="font-bold text-slate-800">{p.title}</p>
-                            <p className="text-xs text-slate-500">{p.category} • {p.year}</p>
+                            {inlineEdit?.id === p.id ? (
+                              <input
+                                autoFocus
+                                className="input !py-1 !px-2 font-bold"
+                                value={inlineEdit.value}
+                                onChange={(e) => setInlineEdit({ id: p.id, value: e.target.value })}
+                                onBlur={saveInlineTitle}
+                                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") setInlineEdit(null); }}
+                              />
+                            ) : (
+                              <button type="button" title="Click to rename" onClick={() => setInlineEdit({ id: p.id, value: p.title || "" })} className="font-bold text-slate-800 text-left hover:underline">{p.title || "Untitled"}</button>
+                            )}
+                            <p className="text-xs text-slate-500">{p.type === "video" ? "Video" : "Image"}{p.year ? ` • ${p.year}` : ""}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          <select aria-label="Brand" className="input !w-auto !py-1.5 !text-xs hidden sm:block" value={p.brand_id || ""} onChange={(e) => changeProjectBrand(p.id, e.target.value)}>
+                            <option value="">No brand</option>
+                            {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                          </select>
                           <button onClick={() => handleOpenForm(p)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil size={16}/></button>
                           <button onClick={() => handleDeleteClick("projects", p.id, p.title)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
                         </div>
                       </Reorder.Item>
                     ))}
                   </Reorder.Group>
+                  </>
                 )
               )}
 
