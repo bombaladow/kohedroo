@@ -63,6 +63,7 @@ export default function AdminDashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [brandFilter, setBrandFilter] = useState("");
   const [uploadQueue, setUploadQueue] = useState([]); // bulk drop: [{id,name,status}]
+  const [settingsForm, setSettingsForm] = useState({});
   const [inlineEdit, setInlineEdit] = useState(null); // {id, value}
 
   useEffect(() => {
@@ -109,6 +110,7 @@ export default function AdminDashboard() {
     const contentObj = {};
     content.data?.forEach(item => contentObj[item.key] = item.value);
     setSiteContent(contentObj);
+    setSettingsForm(contentObj);
   };
 
   const handleTabChange = (tab) => {
@@ -238,6 +240,37 @@ export default function AdminDashboard() {
     setProjects((ps) => ps.map((p) => (p.id === id ? { ...p, brand_id: brand_id || null } : p)));
     const { error } = await supabase.from("projects").update({ brand_id: brand_id || null }).eq("id", id);
     if (error) toast.error("Error: " + error.message);
+  };
+
+  const SETTINGS_GROUPS = [
+    { title: "Home page", fields: [
+      { key: "hero_title", label: "Main title", placeholder: "KOHEDROO" },
+      { key: "hero_subtitle", label: "Subtitle under the logo", placeholder: "Art Director & AI Creative Lead...", multiline: true },
+    ]},
+    { title: "Contact", fields: [
+      { key: "whatsapp", label: "WhatsApp number (with country code)", placeholder: "+971 55 000 0000", type: "tel" },
+      { key: "email", label: "Email", placeholder: "hello@kohedroo.com", type: "email" },
+    ]},
+  ];
+  const SETTINGS_KEYS = SETTINGS_GROUPS.flatMap((g) => g.fields.map((f) => f.key));
+
+  const saveSettings = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const rows = SETTINGS_KEYS
+        .filter((k) => (settingsForm[k] ?? "") !== (siteContent[k] ?? ""))
+        .map((k) => ({ key: k, value: (settingsForm[k] ?? "").trim() }));
+      if (rows.length === 0) { toast.info("Nothing changed."); return; }
+      const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
+      if (error) throw error;
+      toast.success("Settings saved");
+      await fetchAllData();
+    } catch (err) {
+      toast.error("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -888,42 +921,51 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === "content" && (
-             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 overflow-x-auto">
-               <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-lg font-bold text-slate-800">Site Content (Texts)</h2>
-                    <p className="text-sm text-slate-500">Manage every text displayed on your website.</p>
-                  </div>
-                  <button onClick={() => handleOpenForm()} className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-all shadow-sm">
-                    <Plus size={16} /> Add New Key
-                  </button>
-               </div>
-               {Object.keys(siteContent).length === 0 && !isFormOpen ? (
-                 <EmptyState icon={Database} title="No Content Keys" description="Content keys are used to display dynamic text on your website. Click add to create one." btnText="Add New Key" onClick={() => handleOpenForm()} />
-               ) : (
-               <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
-                      <th className="p-4 font-semibold">Key</th>
-                      <th className="p-4 font-semibold">Value</th>
-                      <th className="p-4 font-semibold text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {Object.entries(siteContent).map(([key, value]) => (
-                      <tr key={key} className="hover:bg-slate-50/50 transition-colors">
-                        <td className="p-4 font-bold text-slate-800 text-sm">{key}</td>
-                        <td className="p-4 text-sm text-slate-600 truncate max-w-xs">{value}</td>
-                        <td className="p-4 text-right space-x-2">
-                          <button onClick={() => handleOpenForm({ id: key, key: key, value: value })} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil size={16}/></button>
-                          <button onClick={() => handleDeleteClick("site_content", key, key)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-               )}
-             </div>
+            <div className="space-y-6 max-w-3xl">
+              <form onSubmit={saveSettings} className="space-y-6">
+                {SETTINGS_GROUPS.map((g) => (
+                  <section key={g.title} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">{g.title}</h2>
+                    <div className="space-y-4">
+                      {g.fields.map((f) => (
+                        <div key={f.key}>
+                          <label htmlFor={`set-${f.key}`} className="block text-sm font-semibold text-slate-700 mb-2">{f.label}</label>
+                          {f.multiline ? (
+                            <textarea id={`set-${f.key}`} rows="3" className="input" placeholder={f.placeholder} value={settingsForm[f.key] || ""} onChange={(e) => setSettingsForm({ ...settingsForm, [f.key]: e.target.value })} />
+                          ) : (
+                            <input id={`set-${f.key}`} type={f.type || "text"} className="input" placeholder={f.placeholder} value={settingsForm[f.key] || ""} onChange={(e) => setSettingsForm({ ...settingsForm, [f.key]: e.target.value })} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+                <p className="text-sm text-slate-500">The About section (photo, bio, skills, stats) has its own tab.</p>
+                <div className="sticky bottom-4">
+                  <button type="submit" disabled={loading} className="btn-primary px-8 shadow-lg">{loading ? "Saving..." : "Save settings"}</button>
+                </div>
+              </form>
+
+              {Object.keys(siteContent).filter((k) => !SETTINGS_KEYS.includes(k)).length > 0 && (
+                <details className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                  <summary className="cursor-pointer text-sm font-bold text-slate-600 uppercase tracking-wider">Other saved texts (advanced)</summary>
+                  <table className="w-full text-left border-collapse mt-4">
+                    <tbody className="divide-y divide-slate-100">
+                      {Object.entries(siteContent).filter(([k]) => !SETTINGS_KEYS.includes(k)).map(([key, value]) => (
+                        <tr key={key}>
+                          <td className="p-3 font-bold text-slate-800 text-sm">{key}</td>
+                          <td className="p-3 text-sm text-slate-600 truncate max-w-xs">{value}</td>
+                          <td className="p-3 text-right space-x-2">
+                            <button type="button" onClick={() => handleOpenForm({ id: key, key: key, value: value })} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil size={16}/></button>
+                            <button type="button" onClick={() => handleDeleteClick("site_content", key, key)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </details>
+              )}
+            </div>
           )}
           
           {activeTab === "about" && !isFormOpen && (
