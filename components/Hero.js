@@ -7,10 +7,11 @@ import MagneticButton from './MagneticButton';
 import AnimatedCounter from './AnimatedCounter'; // ضفنا العداد
 
 export default function Hero({ settings }) {
+  // Editable from the dashboard (Site Settings); defaults keep the old values.
   const stats = [
-    ['13+', 'Years Exp.'],
-    ['100+', 'Videos'],
-    ['UAE & EG', 'Markets'],
+    [settings?.hero_stat1_value || '13+', settings?.hero_stat1_label || 'Years Exp.'],
+    [settings?.hero_stat2_value || '100+', settings?.hero_stat2_label || 'Videos'],
+    [settings?.hero_stat3_value || 'UAE & EG', settings?.hero_stat3_label || 'Markets'],
   ];
 
   return (

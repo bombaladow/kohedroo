@@ -1,23 +1,116 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { ArrowLeft, Play, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { supabase } from '@/lib/supabaseClient';
+import { useLoading } from '@/lib/LoadingContext';
+import VideoModal from '@/components/VideoModal';
+import ImageLightbox from '@/components/ImageLightbox';
+import styles from './brandPage.module.css';
+
+const TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'video', label: 'Motion' },
+  { key: 'image', label: 'Stills' },
+];
+
+function VideoTile({ project, onOpen }) {
+  // Orientation is read from the video's first frame once its metadata loads, so vertical
+  // and horizontal videos each keep their own shape in the masonry.
+  const [ratio, setRatio] = useState('16 / 9');
+
+  return (
+    <button
+      type="button"
+      className={styles.tile}
+      onClick={() => onOpen(project.video_url || project.media_url)}
+      aria-label={`Play ${project.title}`}
+    >
+      <span className={`${styles.frame} ${styles.frameVideo}`} style={{ aspectRatio: ratio }}>
+        {(project.video_url || project.media_url) && (
+          <video
+            src={`${project.video_url || project.media_url}#t=0.1`}
+            muted
+            playsInline
+            preload="metadata"
+            onLoadedMetadata={(e) => {
+              const { videoWidth: w, videoHeight: h } = e.currentTarget;
+              if (w && h) setRatio(`${w} / ${h}`);
+            }}
+          />
+        )}
+        <span className={styles.play} aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z" /></svg>
+        </span>
+      </span>
+      <span className={styles.caption}>
+        <span className={styles.captionTitle}>{project.title}</span>
+        <span className={`${styles.mono} ${styles.captionMeta}`}>{project.year}</span>
+      </span>
+    </button>
+  );
+}
+
+function ImageTile({ project, onOpen }) {
+  return (
+    <button
+      type="button"
+      className={styles.tile}
+      onClick={() => onOpen(project.media_url)}
+      aria-label={`Open ${project.title}`}
+    >
+      <span className={styles.frame}>
+        <img src={project.media_url} alt={project.title || ''} loading="lazy" decoding="async" />
+      </span>
+      <span className={styles.caption}>
+        <span className={styles.captionTitle}>{project.title}</span>
+        <span className={`${styles.mono} ${styles.captionMeta}`}>{project.year}</span>
+      </span>
+    </button>
+  );
+}
+
+function Section({ title, accent, count, children }) {
+  return (
+    <section className={styles.section}>
+      <div className={styles.sectionHead}>
+        <h2 className={styles.sectionTitle}>
+          <em>{accent}</em> {title}
+        </h2>
+        <span className={`${styles.mono} ${styles.count}`}>{String(count).padStart(2, '0')}</span>
+      </div>
+      <div className={styles.masonry}>{children}</div>
+    </section>
+  );
+}
 
 export default function BrandPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { setIsDataLoaded } = useLoading();
+
   const [brand, setBrand] = useState(null);
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('all');
+  const [activeVideo, setActiveVideo] = useState(null);
+  const [activeImage, setActiveImage] = useState(null);
+
+  // Read the filter from the URL (?type=video) so a filtered view can be shared
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('type');
+    if (t === 'video' || t === 'image') setTab(t);
+  }, []);
 
   useEffect(() => {
-    const fetchBrandData = async () => {
-      const { data: brandData, error: brandError } = await supabase.from('brands').select('*').eq('id', id).single();
-      if (brandError || !brandData) {
+    const load = async () => {
+      const { data: brandData, error } = await supabase
+        .from('brands')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error || !brandData) {
+        setIsDataLoaded(true);
         router.push('/');
         return;
       }
@@ -27,105 +120,89 @@ export default function BrandPage() {
         .from('projects')
         .select('*')
         .eq('brand_id', id)
-        .order('created_at', { ascending: false });
-      
-      setProjects(projectsData || []);
-      setLoading(false);
-    };
-    fetchBrandData();
-  }, [id, router]);
+        .order('sort_order', { ascending: true });
 
-  if (loading || !brand) return <div className="min-h-screen flex items-center justify-center font-mono">Loading...</div>;
+      setProjects(projectsData || []);
+      setIsDataLoaded(true);
+    };
+    load();
+  }, [id, router, setIsDataLoaded]);
+
+  const videos = useMemo(() => projects.filter((p) => p.type === 'video'), [projects]);
+  const images = useMemo(() => projects.filter((p) => p.type !== 'video'), [projects]);
+
+  const changeTab = (key) => {
+    setTab(key);
+    const url = new URL(window.location.href);
+    if (key === 'all') url.searchParams.delete('type');
+    else url.searchParams.set('type', key);
+    window.history.replaceState(null, '', url);
+  };
+
+  if (!brand) return <div className={`${styles.loading} ${styles.mono}`}>Loading</div>;
+
+  const counts = { all: projects.length, video: videos.length, image: images.length };
+  const showVideos = (tab === 'all' || tab === 'video') && videos.length > 0;
+  const showImages = (tab === 'all' || tab === 'image') && images.length > 0;
 
   return (
-    <div className="min-h-screen bg-zinc-50">
-      <div className="fixed top-6 left-6 md:top-12 md:left-12 z-50">
-        <Link href="/" className="inline-flex items-center gap-2 bg-white border border-black/10 px-4 py-2 rounded-full text-sm font-semibold hover:bg-black hover:text-white transition-all shadow-sm">
-          <ArrowLeft size={16} /> Back to Home
+    <div className={styles.page}>
+      <header className={`${styles.hero} ${styles.wrap}`}>
+        <Link href="/#brands" className={`${styles.back} ${styles.mono}`}>
+          <span aria-hidden="true">&larr;</span> All brands
         </Link>
+
+        <div className={styles.heroCenter}>
+          <div className={styles.logo}>
+            {brand.logo_url && <img src={brand.logo_url} alt="" />}
+          </div>
+          <p className={`${styles.mono} ${styles.worksCount}`}>
+            {projects.length} {projects.length === 1 ? 'Work' : 'Works'}
+          </p>
+        </div>
+      </header>
+
+      <div className={styles.bar}>
+        <div className={`${styles.barInner} ${styles.wrap}`} role="group" aria-label="Filter work">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              aria-pressed={tab === t.key}
+              onClick={() => changeTab(t.key)}
+              className={`${styles.tab} ${styles.mono} ${tab === t.key ? styles.tabActive : ''}`}
+            >
+              {t.label}
+              <sup>{counts[t.key]}</sup>
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="pt-32 pb-20 px-6 bg-white border-b border-black/5 text-center flex flex-col items-center">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-32 md:w-48 h-20 md:h-28 relative mb-8"
-        >
-          <Image src={brand.logo_url} alt={brand.name} fill className="object-contain" />
-        </motion.div>
-        <motion.h1 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="text-4xl md:text-6xl font-extrabold tracking-tighter mb-4"
-        >
-          {brand.name}
-        </motion.h1>
-        
-        {brand.description && (
-          <motion.p 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-zinc-600 max-w-2xl mx-auto text-lg mb-6"
-          >
-            {brand.description}
-          </motion.p>
-        )}
-
-        <motion.p 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="text-zinc-400 font-mono text-sm uppercase tracking-widest"
-        >
-          Selected Work — {projects.length} Projects
-        </motion.p>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
-        {projects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-            {projects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group relative"
-              >
-                <Link href={`/work/${project.id}`} className="block">
-                  <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-zinc-200 mb-6">
-                    {project.video_url ? (
-                      <video src={project.video_url} muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    ) : (
-                      <img src={project.media_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    )}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
-                        {project.video_url ? <Play size={24} className="text-white ml-1" fill="white" /> : <ArrowUpRight size={24} className="text-white" />}
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-2xl font-bold tracking-tight mb-1 group-hover:text-zinc-600 transition-colors">{project.title}</h3>
-                      <p className="text-sm font-mono text-zinc-500 uppercase tracking-widest">{project.category}</p>
-                    </div>
-                    <span className="text-sm font-mono text-zinc-400 border border-black/10 px-3 py-1 rounded-full">{project.year}</span>
-                  </div>
-                </Link>
-              </motion.div>
+      <main className={`${styles.content} ${styles.wrap}`}>
+        {showVideos && (
+          <Section accent="Motion" title="& reels" count={videos.length}>
+            {videos.map((p) => (
+              <VideoTile key={p.id} project={p} onOpen={setActiveVideo} />
             ))}
-          </div>
-        ) : (
-          <div className="text-center py-32 text-zinc-500 font-mono">
-            No projects uploaded for this brand yet.
-          </div>
+          </Section>
         )}
-      </div>
+
+        {showImages && (
+          <Section accent="Stills" title="& design" count={images.length}>
+            {images.map((p) => (
+              <ImageTile key={p.id} project={p} onOpen={setActiveImage} />
+            ))}
+          </Section>
+        )}
+
+        {!showVideos && !showImages && (
+          <p className={`${styles.empty} ${styles.mono}`}>No work in this section yet.</p>
+        )}
+      </main>
+
+      <VideoModal isOpen={!!activeVideo} onClose={() => setActiveVideo(null)} videoUrl={activeVideo} />
+      <ImageLightbox isOpen={!!activeImage} onClose={() => setActiveImage(null)} imageUrl={activeImage} />
     </div>
   );
 }

@@ -84,7 +84,7 @@ export default function BrandsShowcase() {
     <section id="brands" className={styles.section}>
       <div className={styles.inner}>
         <header className={styles.head}>
-          <span className={styles.eyebrow}>Selected clients / {brands.length}</span>
+          <span className={styles.eyebrow}>Brands I&apos;ve worked with</span>
           <h2 className={styles.title}>
             Brands I&apos;ve <em>worked</em> with
           </h2>
