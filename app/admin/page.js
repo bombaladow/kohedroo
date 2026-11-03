@@ -247,6 +247,14 @@ export default function AdminDashboard() {
       { key: "hero_title", label: "Main title", placeholder: "KOHEDROO" },
       { key: "hero_subtitle", label: "Subtitle under the logo", placeholder: "Art Director & AI Creative Lead...", multiline: true },
     ]},
+    { title: "Home page numbers", fields: [
+      { key: "hero_stat1_value", label: "Number 1", placeholder: "13+" },
+      { key: "hero_stat1_label", label: "Label 1", placeholder: "Years Exp." },
+      { key: "hero_stat2_value", label: "Number 2", placeholder: "100+" },
+      { key: "hero_stat2_label", label: "Label 2", placeholder: "Videos" },
+      { key: "hero_stat3_value", label: "Number 3", placeholder: "UAE & EG" },
+      { key: "hero_stat3_label", label: "Label 3", placeholder: "Markets" },
+    ]},
     { title: "Contact", fields: [
       { key: "whatsapp", label: "WhatsApp number (with country code)", placeholder: "+971 55 000 0000", type: "tel" },
       { key: "email", label: "Email", placeholder: "hello@kohedroo.com", type: "email" },
@@ -926,9 +934,9 @@ export default function AdminDashboard() {
                 {SETTINGS_GROUPS.map((g) => (
                   <section key={g.title} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                     <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">{g.title}</h2>
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {g.fields.map((f) => (
-                        <div key={f.key}>
+                        <div key={f.key} className={f.multiline ? "sm:col-span-2" : ""}>
                           <label htmlFor={`set-${f.key}`} className="block text-sm font-semibold text-slate-700 mb-2">{f.label}</label>
                           {f.multiline ? (
                             <textarea id={`set-${f.key}`} rows="3" className="input" placeholder={f.placeholder} value={settingsForm[f.key] || ""} onChange={(e) => setSettingsForm({ ...settingsForm, [f.key]: e.target.value })} />
