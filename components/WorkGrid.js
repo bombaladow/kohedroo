@@ -88,8 +88,7 @@ function ProjectCard({ project, index }) {
               loop
               playsInline
               preload="metadata"
-              poster={project.media_url}
-              src={project.video_url}
+              src={`${project.video_url}#t=0.1`}
               className="w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-700 ease-out"
             />
           ) : (

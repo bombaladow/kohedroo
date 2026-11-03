@@ -115,7 +115,11 @@ export default function ProjectDetails() {
               {relatedProjects.map((rp) => (
                 <Link key={rp.id} href={`/work/${rp.id}`} className="group block">
                   <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-zinc-100 mb-4 border border-black/5">
-                    <img src={rp.media_url} alt={rp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    {rp.video_url ? (
+                      <video src={`${rp.video_url}#t=0.1`} muted playsInline preload="metadata" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    ) : (
+                      <img src={rp.media_url} alt={rp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    )}
                   </div>
                   <h3 className="text-lg md:text-xl font-bold group-hover:text-zinc-600 transition-colors">{rp.title}</h3>
                   <p className="text-xs md:text-sm text-zinc-500 font-mono mt-1">{rp.category}</p>

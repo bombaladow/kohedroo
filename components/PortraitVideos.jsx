@@ -94,22 +94,15 @@ function VideoCard({ project, index, onClick }) {
       onClick={onClick}
       className="group relative aspect-[9/16] rounded-3xl overflow-hidden bg-zinc-900 cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500 border border-black/10 active:scale-[0.98]"
     >
-      <img
-        src={project.media_url}
-        alt={project.title}
+      <video
+        ref={videoRef}
+        src={`${project.video_url || project.media_url}#t=0.1`}
+        muted
+        loop
+        playsInline
+        preload="metadata"
         className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
       />
-      
-      {project.video_url && (
-        <video
-          ref={videoRef}
-          src={project.video_url}
-          muted
-          loop
-          playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-        />
-      )}
 
       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent z-10" />
       

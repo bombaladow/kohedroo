@@ -2,19 +2,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import { 
-  LayoutDashboard, Image as ImageIcon, Briefcase, Users, 
-  Calendar, Settings, LogOut, Plus, Pencil, Trash2, 
-  MessageSquare, Menu, X, CheckCircle, TrendingUp, UserCircle, 
+import {
+  LayoutDashboard, Image as ImageIcon, Briefcase, Users,
+  Calendar, Settings, LogOut, Plus, Pencil, Trash2,
+  MessageSquare, Menu, X, CheckCircle, TrendingUp, UserCircle,
   Search, GripVertical, Download, Database
 } from "lucide-react";
 import { motion, Reorder } from "framer-motion";
 import { toast } from 'sonner';
-import imageCompression from 'browser-image-compression';
-import { FFmpeg } from '@ffmpeg/ffmpeg'; // ضفنا ده
-import { fetchFile, toBlobURL } from '@ffmpeg/util'; // ضفنا ده
 import ConfirmModal from "@/components/ConfirmModal";
 import ImageLightbox from "@/components/ImageLightbox";
+import DropUploader from "@/components/DropUploader";
 import { useLoading } from "@/lib/LoadingContext";
 
 // مكون الحالة الفارغة (Empty State)
@@ -27,8 +25,8 @@ const EmptyState = ({ icon: Icon, title, description, btnText, onClick }) => (
     <p className="text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
       {description}
     </p>
-    <button 
-      onClick={onClick} 
+    <button
+      onClick={onClick}
       className="flex items-center gap-2 bg-black text-white px-8 py-3.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-all shadow-lg active:scale-95"
     >
       <Plus size={18} /> {btnText}
@@ -49,17 +47,18 @@ export default function AdminDashboard() {
   const [packages, setPackages] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [siteContent, setSiteContent] = useState({});
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: "", message: "", action: null, isDestructive: true });
   const [lightboxImage, setLightboxImage] = useState(null);
 
   const [formData, setFormData] = useState({});
-  const [file, setFile] = useState(null);
-  const [coverFile, setCoverFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0); // عدد الرفعات الشغالة دلوقتي
   const [editingId, setEditingId] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+
+  const trackUpload = (busy) => setUploadingCount((c) => Math.max(0, c + (busy ? 1 : -1)));
 
   useEffect(() => {
     setIsDataLoaded(true);
@@ -92,7 +91,7 @@ export default function AdminDashboard() {
       supabase.from("brands").select("*").order("sort_order", { ascending: true }),
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("packages").select("*").order("sort_order", { ascending: true }),
-      supabase.from("bookings").select(`*, clients(name, phone), packages(title)`).order("created_at", { ascending: false }),
+      supabase.from("bookings").select(`*, clients(name, phone), packages(name)`).order("created_at", { ascending: false }),
       supabase.from("site_content").select("*")
     ]);
 
@@ -101,7 +100,7 @@ export default function AdminDashboard() {
     setClients(cli.data || []);
     setPackages(pkg.data || []);
     setBookings(book.data || []);
-    
+
     const contentObj = {};
     content.data?.forEach(item => contentObj[item.key] = item.value);
     setSiteContent(contentObj);
@@ -110,8 +109,6 @@ export default function AdminDashboard() {
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setFormData({});
-    setFile(null);
-    setCoverFile(null);
     setEditingId(null);
     setIsFormOpen(false);
     setIsSidebarOpen(false);
@@ -121,6 +118,7 @@ export default function AdminDashboard() {
   const handleOpenForm = (data = null) => {
     if (data) {
       setFormData(data);
+      if (data.features) setFormData(prev => ({ ...prev, features: data.features.join(', ') }));
       setEditingId(data.id);
     } else {
       const defaults = {};
@@ -134,82 +132,24 @@ export default function AdminDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🎥 دالة ضغط الفيديو (جديدة)
-  const compressVideo = async (file) => {
-    if (file.size < 10 * 1024 * 1024) return file; // لو الفيديو صغير (أقل من 10 ميجا) سيبه زي ما هو
-    
-    toast.info("Compressing video... This might take a minute.", { duration: 6000 });
-    const ffmpeg = new FFmpeg();
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-    
-    try {
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-      });
-
-      await ffmpeg.writeFile('input.mp4', await fetchFile(file));
-      // ضغط الفيديو بجودة معقولة
-      await ffmpeg.exec(['-i', 'input.mp4', '-vcodec', 'libx264', '-crf', '28', 'output.mp4']);
-      
-      const data = await ffmpeg.readFile('output.mp4');
-      return new File([data.buffer], file.name, { type: 'video/mp4' });
-    } catch (error) {
-      console.warn("Video compression failed, uploading original.", error);
-      return file; // لو فشل الضغط، نرفع الأصلي
-    }
-  };
-
-  // 🖼️ دالة رفع الصور (بتضغط صور وبتضغط فيديو)
-  const uploadMedia = async (file, bucket = 'portfolio-media') => {
-    let fileToUpload = file;
-    
-    // لو الملف صورة، استخدم مكتبة الصور
-    if (file.type.startsWith('image/')) {
-      try {
-        const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
-        fileToUpload = await imageCompression(file, options);
-      } catch (error) {
-        console.warn("Image compression failed", error);
-      }
-    } 
-    // لو الملف فيديو، استخدم مكتبة FFmpeg
-    else if (file.type.startsWith('video/')) {
-      fileToUpload = await compressVideo(file);
-    }
-
-    const fileExt = fileToUpload.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
-    const { error } = await supabase.storage.from(bucket).upload(fileName, fileToUpload);
-    if (error) throw error;
-    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    return publicUrl;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (uploadingCount > 0) return toast.info("Wait for the upload to finish first");
+    if (activeTab === "projects" && !formData.media_url) return toast.error("Please upload an image or video first");
+    if (activeTab === "brands" && !formData.logo_url) return toast.error("Please upload the brand logo first");
+
     setLoading(true);
     try {
-      let uploadedUrl = null;
-      let uploadedCoverUrl = null;
-
-      if (file) uploadedUrl = await uploadMedia(file);
-      if (coverFile) uploadedCoverUrl = await uploadMedia(coverFile);
-
       if (activeTab === "projects") {
+        // الرفع حصل خلاص، والرابط جاهز في formData
         const data = { ...formData };
-        if (uploadedUrl) {
-          data.media_url = uploadedUrl;
-          if (formData.type === 'video') data.video_url = uploadedUrl;
-        }
         if (!editingId) data.sort_order = projects.length;
         if (editingId) await supabase.from("projects").update(data).eq("id", editingId);
         else await supabase.from("projects").insert([data]);
-      } 
+      }
       else if (activeTab === "brands") {
         const data = { ...formData };
-        if (uploadedUrl) data.logo_url = uploadedUrl;
-        if (uploadedCoverUrl) data.cover_url = uploadedCoverUrl;
         data.size = parseFloat(formData.size) || 1;
         if (!editingId) data.sort_order = brands.length;
         if (editingId) await supabase.from("brands").update(data).eq("id", editingId);
@@ -218,21 +158,18 @@ export default function AdminDashboard() {
       else if (activeTab === "clients") {
         if (editingId) await supabase.from("clients").update(formData).eq("id", editingId);
         else await supabase.from("clients").insert([formData]);
-      } 
+      }
       else if (activeTab === "packages") {
-        const data = {
-          title: formData.title,
-          price: formData.price || null,
-          features: formData.features || '',
-        };
+        const featuresArray = formData.features ? formData.features.split(',').map(f => f.trim()) : [];
+        const data = { ...formData, features: featuresArray };
         if (!editingId) data.sort_order = packages.length;
         if (editingId) await supabase.from("packages").update(data).eq("id", editingId);
         else await supabase.from("packages").insert([data]);
-      } 
+      }
       else if (activeTab === "bookings") {
         if (editingId) await supabase.from("bookings").update(formData).eq("id", editingId);
         else await supabase.from("bookings").insert([formData]);
-      } 
+      }
       else if (activeTab === "content") {
         for (const [key, value] of Object.entries(formData)) {
           await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
@@ -245,8 +182,8 @@ export default function AdminDashboard() {
           about_skills: formData.about_skills,
           stat_years: formData.stat_years,
           stat_projects: formData.stat_projects,
+          about_image: formData.about_image,
         };
-        if (uploadedUrl) contentUpdates.about_image = uploadedUrl;
         for (const [key, value] of Object.entries(contentUpdates)) {
           if (value) await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
         }
@@ -298,7 +235,7 @@ export default function AdminDashboard() {
       `"${c.name || ''}"`, `"${c.email || ''}"`, `"${c.phone || ''}"`, `"${c.company || ''}"`, `"${c.status || ''}"`, `"${new Date(c.created_at).toLocaleDateString()}"`
     ]);
     const csvContent = [headers.join(","), ...csvData.map(row => row.join(","))].join("\n");
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(["﻿" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -334,8 +271,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-800" dir="ltr">
-      
-      <ConfirmModal 
+
+      <ConfirmModal
         isOpen={confirmState.isOpen}
         onClose={() => setConfirmState({ ...confirmState, isOpen: false })}
         onConfirm={confirmState.action}
@@ -344,10 +281,10 @@ export default function AdminDashboard() {
         isDestructive={confirmState.isDestructive}
       />
 
-      <ImageLightbox 
-        isOpen={!!lightboxImage} 
-        onClose={() => setLightboxImage(null)} 
-        imageUrl={lightboxImage} 
+      <ImageLightbox
+        isOpen={!!lightboxImage}
+        onClose={() => setLightboxImage(null)}
+        imageUrl={lightboxImage}
       />
 
       {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
@@ -357,7 +294,7 @@ export default function AdminDashboard() {
           <h2 className="text-2xl font-extrabold text-white tracking-tighter">Kohedroo<span className="text-indigo-500">.</span></h2>
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-400"><X size={20}/></button>
         </div>
-        
+
         <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -387,12 +324,12 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-4 flex-1">
             <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 bg-slate-100 rounded-lg"><Menu size={20}/></button>
             <h1 className="text-xl font-bold text-slate-800 capitalize hidden md:block">{activeTab}</h1>
-            
+
             <div className="relative max-w-md w-full ml-4 hidden md:block">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search projects, clients..." 
+              <input
+                type="text"
+                placeholder="Search projects, clients..."
                 className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm transition-all"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -440,18 +377,23 @@ export default function AdminDashboard() {
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-lg mb-8 relative">
               <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500 bg-slate-100 hover:bg-red-50 p-2 rounded-full transition-colors"><X size={20}/></button>
               <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-                {editingId ? <Pencil size={20}/> : <Plus size={20}/>} 
+                {editingId ? <Pencil size={20}/> : <Plus size={20}/>}
                 {editingId ? "Edit Item" : (activeTab === "about" ? "Edit About Section" : "Add New Item")}
               </h2>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
-                
+
                 {activeTab === "about" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Profile Image</label>
-                      <input type="file" accept="image/*" className="input" onChange={(e) => setFile(e.target.files[0])} />
-                      {siteContent.about_image && <p className="text-xs text-emerald-500 mt-1">Image already uploaded. Upload a new one to replace.</p>}
+                      <DropUploader
+                        accept="image/*"
+                        label="Drag & drop your photo here, or click"
+                        value={formData.about_image}
+                        onBusyChange={trackUpload}
+                        onUploaded={(url) => setFormData(prev => ({ ...prev, about_image: url }))}
+                      />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Main Headline</label>
@@ -478,6 +420,24 @@ export default function AdminDashboard() {
 
                 {activeTab === "projects" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Media (image or video) *</label>
+                      <DropUploader
+                        label="Drag & drop an image or video here, or click"
+                        value={formData.media_url}
+                        onBusyChange={trackUpload}
+                        onUploaded={(url, f) => {
+                          const isVid = f.type.startsWith('video/');
+                          setFormData(prev => ({
+                            ...prev,
+                            media_url: url,
+                            type: isVid ? 'video' : 'image',
+                            video_url: isVid ? url : null,
+                          }));
+                        }}
+                        onClear={() => setFormData(prev => ({ ...prev, media_url: null, video_url: null }))}
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Project Title *</label>
                       <input type="text" placeholder="e.g. Joyalukkas Campaign" className="input" required value={formData.title || ''} onChange={(e) => setFormData({...formData, title: e.target.value})} />
@@ -501,17 +461,6 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
                       <textarea placeholder="What was this project about?" className="input" rows="3" value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Type</label>
-                      <select className="input" value={formData.type || 'image'} onChange={(e) => setFormData({...formData, type: e.target.value})}>
-                        <option value="image">Image</option>
-                        <option value="video">Video</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Media (Auto-compresses)</label>
-                      <input type="file" accept="image/*,video/*" className="input" onChange={(e) => setFile(e.target.files[0])} required={!editingId} />
-                    </div>
                   </div>
                 )}
 
@@ -530,12 +479,25 @@ export default function AdminDashboard() {
                       <textarea placeholder="Short description about the work done for this brand..." className="input" rows="3" value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Logo (Transparent PNG) *</label>
-                      <input type="file" accept="image/*" className="input" onChange={(e) => setFile(e.target.files[0])} required={!editingId} />
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Logo (Transparent PNG) *</label>
+                      <DropUploader
+                        accept="image/*"
+                        label="Drop the logo here, or click"
+                        value={formData.logo_url}
+                        onBusyChange={trackUpload}
+                        onUploaded={(url) => setFormData(prev => ({ ...prev, logo_url: url }))}
+                      />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Cover Image (Background)</label>
-                      <input type="file" accept="image/*" className="input" onChange={(e) => setCoverFile(e.target.files[0])} />
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Cover Image (Background)</label>
+                      <DropUploader
+                        accept="image/*"
+                        label="Drop the cover here, or click"
+                        value={formData.cover_url}
+                        onBusyChange={trackUpload}
+                        onUploaded={(url) => setFormData(prev => ({ ...prev, cover_url: url }))}
+                        onClear={() => setFormData(prev => ({ ...prev, cover_url: null }))}
+                      />
                     </div>
                   </div>
                 )}
@@ -551,9 +513,9 @@ export default function AdminDashboard() {
 
                 {activeTab === "packages" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Package Name *</label><input type="text" placeholder="e.g. Gold Package" className="input" required value={formData.title || ''} onChange={(e) => setFormData({...formData, title: e.target.value})} /></div>
-                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Price (text, e.g. $500 or $300/mo)</label><input type="text" placeholder="$500" className="input" value={formData.price || ''} onChange={(e) => setFormData({...formData, price: e.target.value})} /></div>
-                    <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-2">Features (one per line)</label><textarea rows="5" placeholder={"Logo Design\nSocial Media Kit\n2 Revisions"} className="input" value={formData.features || ''} onChange={(e) => setFormData({...formData, features: e.target.value})} /></div>
+                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Package Name *</label><input type="text" placeholder="e.g. Gold Package" className="input" required value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} /></div>
+                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Price ($)</label><input type="number" placeholder="500" className="input" value={formData.price || ''} onChange={(e) => setFormData({...formData, price: e.target.value})} /></div>
+                    <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-2">Features (comma separated)</label><input type="text" placeholder="Logo Design, Social Media Kit, 2 Revisions" className="input" value={formData.features || ''} onChange={(e) => setFormData({...formData, features: e.target.value})} /></div>
                   </div>
                 )}
 
@@ -570,7 +532,7 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Package</label>
                       <select className="input" value={formData.package_id || ''} onChange={(e) => setFormData({...formData, package_id: e.target.value})}>
                         <option value="">Select Package</option>
-                        {packages.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                        {packages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
                     <div><label className="block text-sm font-semibold text-slate-700 mb-2">Date *</label><input type="date" className="input" required value={formData.date || ''} onChange={(e) => setFormData({...formData, date: e.target.value})} /></div>
@@ -600,8 +562,8 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="flex gap-3 pt-4 border-t border-slate-100">
-                  <button type="submit" disabled={loading} className="btn-primary flex-1 md:flex-none px-8">
-                    {loading ? "Saving & Compressing..." : "Save Data"}
+                  <button type="submit" disabled={loading || uploadingCount > 0} className="btn-primary flex-1 md:flex-none px-8">
+                    {uploadingCount > 0 ? "Uploading..." : loading ? "Saving..." : "Save Data"}
                   </button>
                   <button type="button" onClick={() => setIsFormOpen(false)} className="bg-slate-100 text-slate-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-slate-200 transition-colors">
                     Cancel
@@ -613,7 +575,7 @@ export default function AdminDashboard() {
 
           {activeTab !== "overview" && activeTab !== "about" && activeTab !== "content" && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-              
+
               {activeTab === "projects" && (
                 projects.length === 0 && !isFormOpen ? (
                   <EmptyState icon={Briefcase} title="No Projects Yet" description="Start building your portfolio by adding your first project. You can upload an image or video." btnText="Add First Project" onClick={() => handleOpenForm()} />
@@ -623,9 +585,9 @@ export default function AdminDashboard() {
                       <Reorder.Item key={p.id} value={p} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-colors">
                         <div className="flex items-center gap-4">
                           <GripVertical size={20} className="text-slate-300" />
-                          <div className="w-12 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLightboxImage(p.media_url)}>
+                          <div className="w-12 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => p.type !== 'video' && setLightboxImage(p.media_url)}>
                             {p.type === 'video' ? (
-                               <div className="w-full h-full flex items-center justify-center bg-black text-white"><Briefcase size={16}/></div>
+                               <video src={`${p.video_url || p.media_url}#t=0.1`} muted preload="metadata" playsInline className="w-full h-full object-cover" />
                             ) : (
                                <img src={p.media_url} alt={p.title} className="w-full h-full object-cover" />
                             )}
@@ -682,13 +644,13 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-4">
                           <GripVertical size={20} className="text-slate-300" />
                           <div>
-                            <p className="font-bold text-slate-800">{p.title}</p>
-                            <p className="text-xs text-slate-500">{p.price}</p>
+                            <p className="font-bold text-slate-800">{p.name}</p>
+                            <p className="text-xs text-slate-500">${p.price}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => handleOpenForm(p)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil size={16}/></button>
-                          <button onClick={() => handleDeleteClick("packages", p.id, p.title)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
+                          <button onClick={() => handleDeleteClick("packages", p.id, p.name)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
                         </div>
                       </Reorder.Item>
                     ))}
@@ -754,7 +716,7 @@ export default function AdminDashboard() {
                           <tr key={b.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="p-4">
                               <p className="font-bold text-slate-800">{b.clients?.name || 'Unknown'}</p>
-                              <p className="text-xs text-slate-500">{b.packages?.title || 'No Package'}</p>
+                              <p className="text-xs text-slate-500">{b.packages?.name || 'No Package'}</p>
                             </td>
                             <td className="p-4 text-sm text-slate-600">{b.date} at {b.time}</td>
                             <td className="p-4">
@@ -819,7 +781,7 @@ export default function AdminDashboard() {
                )}
              </div>
           )}
-          
+
           {activeTab === "about" && !isFormOpen && (
             <div className="bg-white p-10 rounded-2xl border border-slate-200 shadow-sm text-center">
               <UserCircle size={48} className="mx-auto text-indigo-500 mb-4 opacity-50" />
