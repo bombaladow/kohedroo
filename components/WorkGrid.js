@@ -2,7 +2,7 @@
 
 import { motion, useInView, useMotionValue, useSpring, useTransform } from 'framer-motion';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect } from 'react';
 import Link from 'next/link';
 
 function ProjectCard({ project, index }) {
@@ -10,14 +10,6 @@ function ProjectCard({ project, index }) {
   const cardRef = useRef(null);
   const isInView = useInView(cardRef, { amount: 0.5 });
   const hasVideo = Boolean(project.video_url);
-  const [isDesktop, setIsDesktop] = useState(false);
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 768px)');
-    const update = () => setIsDesktop(mq.matches);
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
-  }, []);
 
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -76,8 +68,8 @@ function ProjectCard({ project, index }) {
         transition={{ duration: 0.7, delay: index * 0.1, ease: [0.22, 1, 0.36, 1] }}
         style={{ 
           backgroundColor: project.bg_color || '#1a1917',
-          rotateX: isDesktop ? rotateX : 0,
-          rotateY: isDesktop ? rotateY : 0,
+          rotateX: window.innerWidth >= 768 ? rotateX : 0,
+          rotateY: window.innerWidth >= 768 ? rotateY : 0,
           transformStyle: "preserve-3d"
         }}
         className="group relative cursor-pointer aspect-[4/3] w-full rounded-2xl overflow-hidden border border-black/10 shadow-sm transition-shadow duration-500 md:hover:border-black/30 md:hover:shadow-2xl active:scale-[0.98] md:active:scale-100"
@@ -96,8 +88,7 @@ function ProjectCard({ project, index }) {
               loop
               playsInline
               preload="metadata"
-              poster={project.media_url}
-              src={project.video_url}
+              src={`${project.video_url}#t=0.1`}
               className="w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-700 ease-out"
             />
           ) : (
