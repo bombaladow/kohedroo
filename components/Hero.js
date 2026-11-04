@@ -54,7 +54,7 @@ export default function Hero({ settings }) {
           <MagneticButton className="w-full sm:w-auto">
             <motion.a
               variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0, transition: { duration: 0.5 } } }}
-              href="#about"
+              href="#brands"
               className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 bg-black text-white font-mono text-xs uppercase px-6 py-4 rounded-2xl md:rounded-full font-semibold tracking-wider hover:bg-zinc-800 transition-all shadow-md"
             >
               <span>Discover My Work</span>

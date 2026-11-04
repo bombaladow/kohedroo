@@ -28,9 +28,10 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
   }, [isMenuOpen, lenis]);
 
   const navLinks = [
-    { name: 'Work', href: '#work' },
-    { name: 'About', href: '#about' },
-    { name: 'Contact', href: '#contact' },
+    { name: 'Brands', href: '/#brands' },
+    { name: 'Projects', href: '/work' },
+    { name: 'About', href: '/#about' },
+    { name: 'Contact', href: '/#contact' },
   ];
 
   const closeMenu = () => setIsMenuOpen(false);
@@ -74,7 +75,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
               </Link>
             ))}
             <Link
-              href="#contact"
+              href="/#contact"
               className="bg-black text-white text-xs font-mono uppercase px-6 py-3 rounded-full font-bold tracking-wider hover:bg-zinc-800 transition-all hover:scale-105"
             >
               Let&apos;s Talk
@@ -129,7 +130,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
                 className="mt-8"
               >
                 <Link
-                  href="#contact"
+                  href="/#contact"
                   onClick={closeMenu}
                   className="inline-block bg-black text-white text-sm font-mono uppercase px-8 py-4 rounded-full font-semibold tracking-wider"
                 >
