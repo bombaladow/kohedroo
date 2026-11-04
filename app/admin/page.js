@@ -2,20 +2,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
-import { 
-  LayoutDashboard, Image as ImageIcon, Briefcase, Users, 
-  Calendar, Settings, LogOut, Plus, Pencil, Trash2, 
-  MessageSquare, Menu, X, CheckCircle, TrendingUp, UserCircle, 
+import {
+  LayoutDashboard, Image as ImageIcon, Briefcase, Users,
+  Calendar, Settings, LogOut, Plus, Pencil, Trash2,
+  MessageSquare, Menu, X, CheckCircle, TrendingUp, UserCircle,
   Search, GripVertical, Download, Database
 } from "lucide-react";
 import { motion, Reorder } from "framer-motion";
 import { toast } from 'sonner';
-import imageCompression from 'browser-image-compression';
-import { FFmpeg } from '@ffmpeg/ffmpeg'; // ضفنا ده
-import { fetchFile, toBlobURL } from '@ffmpeg/util'; // ضفنا ده
 import ConfirmModal from "@/components/ConfirmModal";
-import DropZone from "@/components/DropZone";
 import ImageLightbox from "@/components/ImageLightbox";
+import DropUploader from "@/components/DropUploader";
 import { useLoading } from "@/lib/LoadingContext";
 
 // مكون الحالة الفارغة (Empty State)
@@ -28,8 +25,8 @@ const EmptyState = ({ icon: Icon, title, description, btnText, onClick }) => (
     <p className="text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
       {description}
     </p>
-    <button 
-      onClick={onClick} 
+    <button
+      onClick={onClick}
       className="flex items-center gap-2 bg-black text-white px-8 py-3.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition-all shadow-lg active:scale-95"
     >
       <Plus size={18} /> {btnText}
@@ -50,21 +47,18 @@ export default function AdminDashboard() {
   const [packages, setPackages] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [siteContent, setSiteContent] = useState({});
-  
+
   const [searchQuery, setSearchQuery] = useState("");
   const [confirmState, setConfirmState] = useState({ isOpen: false, title: "", message: "", action: null, isDestructive: true });
   const [lightboxImage, setLightboxImage] = useState(null);
 
   const [formData, setFormData] = useState({});
-  const [file, setFile] = useState(null);
-  const [coverFile, setCoverFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [uploadingCount, setUploadingCount] = useState(0); // عدد الرفعات الشغالة دلوقتي
   const [editingId, setEditingId] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [brandFilter, setBrandFilter] = useState("");
-  const [uploadQueue, setUploadQueue] = useState([]); // bulk drop: [{id,name,status}]
-  const [settingsForm, setSettingsForm] = useState({});
-  const [inlineEdit, setInlineEdit] = useState(null); // {id, value}
+
+  const trackUpload = (busy) => setUploadingCount((c) => Math.max(0, c + (busy ? 1 : -1)));
 
   useEffect(() => {
     setIsDataLoaded(true);
@@ -97,7 +91,7 @@ export default function AdminDashboard() {
       supabase.from("brands").select("*").order("sort_order", { ascending: true }),
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
       supabase.from("packages").select("*").order("sort_order", { ascending: true }),
-      supabase.from("bookings").select(`*, clients(name, phone), packages(title)`).order("created_at", { ascending: false }),
+      supabase.from("bookings").select(`*, clients(name, phone), packages(name)`).order("created_at", { ascending: false }),
       supabase.from("site_content").select("*")
     ]);
 
@@ -106,18 +100,15 @@ export default function AdminDashboard() {
     setClients(cli.data || []);
     setPackages(pkg.data || []);
     setBookings(book.data || []);
-    
+
     const contentObj = {};
     content.data?.forEach(item => contentObj[item.key] = item.value);
     setSiteContent(contentObj);
-    setSettingsForm(contentObj);
   };
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
     setFormData({});
-    setFile(null);
-    setCoverFile(null);
     setEditingId(null);
     setIsFormOpen(false);
     setIsSidebarOpen(false);
@@ -127,6 +118,7 @@ export default function AdminDashboard() {
   const handleOpenForm = (data = null) => {
     if (data) {
       setFormData(data);
+      if (data.features) setFormData(prev => ({ ...prev, features: data.features.join(', ') }));
       setEditingId(data.id);
     } else {
       const defaults = {};
@@ -140,202 +132,47 @@ export default function AdminDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // 🎥 دالة ضغط الفيديو (جديدة)
-  const compressVideo = async (file) => {
-    if (file.size < 10 * 1024 * 1024) return file; // لو الفيديو صغير (أقل من 10 ميجا) سيبه زي ما هو
-    
-    toast.info("Compressing video... This might take a minute.", { duration: 6000 });
-    const ffmpeg = new FFmpeg();
-    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-    
-    try {
-      await ffmpeg.load({
-        coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-        wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-      });
-
-      await ffmpeg.writeFile('input.mp4', await fetchFile(file));
-      // ضغط الفيديو بجودة معقولة
-      await ffmpeg.exec(['-i', 'input.mp4', '-vcodec', 'libx264', '-crf', '28', 'output.mp4']);
-      
-      const data = await ffmpeg.readFile('output.mp4');
-      return new File([data.buffer], file.name, { type: 'video/mp4' });
-    } catch (error) {
-      console.warn("Video compression failed, uploading original.", error);
-      return file; // لو فشل الضغط، نرفع الأصلي
-    }
-  };
-
-  // 🖼️ دالة رفع الصور (بتضغط صور وبتضغط فيديو)
-  const uploadMedia = async (file, bucket = 'portfolio-media') => {
-    let fileToUpload = file;
-    
-    // لو الملف صورة، استخدم مكتبة الصور
-    if (file.type.startsWith('image/')) {
-      try {
-        const options = { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true };
-        fileToUpload = await imageCompression(file, options);
-      } catch (error) {
-        console.warn("Image compression failed", error);
-      }
-    } 
-    // لو الملف فيديو، استخدم مكتبة FFmpeg
-    else if (file.type.startsWith('video/')) {
-      fileToUpload = await compressVideo(file);
-    }
-
-    const fileExt = fileToUpload.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random()}.${fileExt}`;
-    const { error } = await supabase.storage.from(bucket).upload(fileName, fileToUpload);
-    if (error) throw error;
-    const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(fileName);
-    return publicUrl;
-  };
-
-  // Drop many files at once: each becomes a project, saved immediately.
-  const handleBulkDrop = async (files) => {
-    const items = files.map((f, i) => ({ id: `${Date.now()}-${i}`, name: f.name, status: "waiting", file: f }));
-    setUploadQueue((q) => [...q, ...items.map(({ file, ...rest }) => rest)]);
-    const setStatus = (id, status) => setUploadQueue((q) => q.map((x) => (x.id === id ? { ...x, status } : x)));
-    let order = projects.length;
-    for (const it of items) {
-      setStatus(it.id, "uploading");
-      try {
-        const url = await uploadMedia(it.file);
-        const isVideo = it.file.type.startsWith("video/");
-        const row = {
-          title: it.file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim() || "Untitled",
-          type: isVideo ? "video" : "image",
-          media_url: url,
-          year: String(new Date().getFullYear()),
-          sort_order: order++,
-        };
-        if (isVideo) row.video_url = url;
-        if (brandFilter) row.brand_id = brandFilter;
-        const { error } = await supabase.from("projects").insert([row]);
-        if (error) throw error;
-        setStatus(it.id, "done");
-      } catch (err) {
-        setStatus(it.id, "error");
-        toast.error(`${it.name}: ${err.message}`);
-      }
-    }
-    await fetchAllData();
-    toast.success("Upload finished. Click a title to rename it.");
-    setTimeout(() => setUploadQueue((q) => q.filter((x) => x.status === "error")), 2500);
-  };
-
-  const saveInlineTitle = async () => {
-    if (!inlineEdit) return;
-    const title = inlineEdit.value.trim();
-    const current = projects.find((p) => p.id === inlineEdit.id);
-    setInlineEdit(null);
-    if (!title || title === current?.title) return;
-    setProjects((ps) => ps.map((p) => (p.id === current.id ? { ...p, title } : p)));
-    const { error } = await supabase.from("projects").update({ title }).eq("id", current.id);
-    if (error) toast.error("Error: " + error.message);
-  };
-
-  const changeProjectBrand = async (id, brand_id) => {
-    setProjects((ps) => ps.map((p) => (p.id === id ? { ...p, brand_id: brand_id || null } : p)));
-    const { error } = await supabase.from("projects").update({ brand_id: brand_id || null }).eq("id", id);
-    if (error) toast.error("Error: " + error.message);
-  };
-
-  const SETTINGS_GROUPS = [
-    { title: "Home page", fields: [
-      { key: "hero_title", label: "Main title", placeholder: "KOHEDROO" },
-      { key: "hero_subtitle", label: "Subtitle under the logo", placeholder: "Art Director & AI Creative Lead...", multiline: true },
-    ]},
-    { title: "Home page numbers", fields: [
-      { key: "hero_stat1_value", label: "Number 1", placeholder: "13+" },
-      { key: "hero_stat1_label", label: "Label 1", placeholder: "Years Exp." },
-      { key: "hero_stat2_value", label: "Number 2", placeholder: "100+" },
-      { key: "hero_stat2_label", label: "Label 2", placeholder: "Videos" },
-      { key: "hero_stat3_value", label: "Number 3", placeholder: "UAE & EG" },
-      { key: "hero_stat3_label", label: "Label 3", placeholder: "Markets" },
-    ]},
-    { title: "Contact", fields: [
-      { key: "whatsapp", label: "WhatsApp number (with country code)", placeholder: "+971 55 000 0000", type: "tel" },
-      { key: "email", label: "Email", placeholder: "hello@kohedroo.com", type: "email" },
-    ]},
-  ];
-  const SETTINGS_KEYS = SETTINGS_GROUPS.flatMap((g) => g.fields.map((f) => f.key));
-
-  const saveSettings = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    try {
-      const rows = SETTINGS_KEYS
-        .filter((k) => (settingsForm[k] ?? "") !== (siteContent[k] ?? ""))
-        .map((k) => ({ key: k, value: (settingsForm[k] ?? "").trim() }));
-      if (rows.length === 0) { toast.info("Nothing changed."); return; }
-      const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
-      if (error) throw error;
-      toast.success("Settings saved");
-      await fetchAllData();
-    } catch (err) {
-      toast.error("Error: " + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (uploadingCount > 0) return toast.info("Wait for the upload to finish first");
+    if (activeTab === "projects" && !formData.media_url) return toast.error("Please upload an image or video first");
+    if (activeTab === "brands" && !formData.logo_url) return toast.error("Please upload the brand logo first");
+
     setLoading(true);
     try {
-      let uploadedUrl = null;
-      let uploadedCoverUrl = null;
-
-      if (file) uploadedUrl = await uploadMedia(file);
-      if (coverFile) uploadedCoverUrl = await uploadMedia(coverFile);
-
-      if (activeTab === "brands" && !editingId && !file) throw new Error("Please add the brand logo first.");
       if (activeTab === "projects") {
+        // الرفع حصل خلاص، والرابط جاهز في formData
         const data = { ...formData };
-        if (uploadedUrl) {
-          data.media_url = uploadedUrl;
-          if (formData.type === 'video') data.video_url = uploadedUrl;
-        }
         if (!editingId) data.sort_order = projects.length;
-        const res = editingId ? await supabase.from("projects").update(data).eq("id", editingId) : await supabase.from("projects").insert([data]);
-        if (res.error) throw res.error;
-      } 
+        if (editingId) await supabase.from("projects").update(data).eq("id", editingId);
+        else await supabase.from("projects").insert([data]);
+      }
       else if (activeTab === "brands") {
         const data = { ...formData };
-        if (uploadedUrl) data.logo_url = uploadedUrl;
-        if (uploadedCoverUrl) data.cover_url = uploadedCoverUrl;
         data.size = parseFloat(formData.size) || 1;
         if (!editingId) data.sort_order = brands.length;
-        const res = editingId ? await supabase.from("brands").update(data).eq("id", editingId) : await supabase.from("brands").insert([data]);
-        if (res.error) throw res.error;
+        if (editingId) await supabase.from("brands").update(data).eq("id", editingId);
+        else await supabase.from("brands").insert([data]);
       }
       else if (activeTab === "clients") {
-        const { id: _i, created_at: _c, ...clientData } = formData;
-        const res = editingId ? await supabase.from("clients").update(clientData).eq("id", editingId) : await supabase.from("clients").insert([clientData]);
-        if (res.error) throw res.error;
-      } 
+        if (editingId) await supabase.from("clients").update(formData).eq("id", editingId);
+        else await supabase.from("clients").insert([formData]);
+      }
       else if (activeTab === "packages") {
-        const data = {
-          title: formData.title,
-          price: formData.price || null,
-          features: formData.features || '',
-        };
+        const featuresArray = formData.features ? formData.features.split(',').map(f => f.trim()) : [];
+        const data = { ...formData, features: featuresArray };
         if (!editingId) data.sort_order = packages.length;
-        const res = editingId ? await supabase.from("packages").update(data).eq("id", editingId) : await supabase.from("packages").insert([data]);
-        if (res.error) throw res.error;
-      } 
+        if (editingId) await supabase.from("packages").update(data).eq("id", editingId);
+        else await supabase.from("packages").insert([data]);
+      }
       else if (activeTab === "bookings") {
-        // نبعت الحقول بتاعة جدول الحجوزات بس (من غير clients/packages المدمجة)
-        const { clients: _cl, packages: _pk, id: _id, created_at: _ca, ...bookingData } = formData;
-        const res = editingId ? await supabase.from("bookings").update(bookingData).eq("id", editingId) : await supabase.from("bookings").insert([bookingData]);
-        if (res.error) throw res.error;
-      } 
+        if (editingId) await supabase.from("bookings").update(formData).eq("id", editingId);
+        else await supabase.from("bookings").insert([formData]);
+      }
       else if (activeTab === "content") {
         for (const [key, value] of Object.entries(formData)) {
-          const { error } = await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
-          if (error) throw error;
+          await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
         }
       }
       else if (activeTab === "about") {
@@ -345,13 +182,10 @@ export default function AdminDashboard() {
           about_skills: formData.about_skills,
           stat_years: formData.stat_years,
           stat_projects: formData.stat_projects,
+          about_image: formData.about_image,
         };
-        if (uploadedUrl) contentUpdates.about_image = uploadedUrl;
         for (const [key, value] of Object.entries(contentUpdates)) {
-          if (value) {
-            const { error } = await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
-            if (error) throw error;
-          }
+          if (value) await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
         }
       }
 
@@ -373,8 +207,7 @@ export default function AdminDashboard() {
       isDestructive: true,
       action: async () => {
         try {
-          const { error } = await supabase.from(table).delete().eq(table === "site_content" ? "key" : "id", id);
-          if (error) throw error;
+          await supabase.from(table).delete().eq("id", id);
           fetchAllData();
           toast.success("Deleted successfully");
         } catch (error) {
@@ -385,20 +218,13 @@ export default function AdminDashboard() {
   };
 
   const handleReorder = async (table, newOrder) => {
-    if (table === "projects") {
-      // لو فيه بحث/فلتر شغال، نرتب العناصر الظاهرة جوه أماكنها بس ونحافظ على الباقي
-      const visibleIds = new Set(newOrder.map((i) => i.id));
-      let k = 0;
-      newOrder = projects.map((p) => (visibleIds.has(p.id) ? newOrder[k++] : p));
-      setProjects(newOrder);
-    }
+    if (table === "projects") setProjects(newOrder);
     if (table === "brands") setBrands(newOrder);
     if (table === "packages") setPackages(newOrder);
 
     const updates = newOrder.map((item, index) => ({ id: item.id, sort_order: index }));
     for (const update of updates) {
-      const { error } = await supabase.from(table).update({ sort_order: update.sort_order }).eq("id", update.id);
-      if (error) { toast.error("Reorder failed: " + error.message); fetchAllData(); return; }
+      await supabase.from(table).update({ sort_order: update.sort_order }).eq("id", update.id);
     }
   };
 
@@ -409,7 +235,7 @@ export default function AdminDashboard() {
       `"${c.name || ''}"`, `"${c.email || ''}"`, `"${c.phone || ''}"`, `"${c.company || ''}"`, `"${c.status || ''}"`, `"${new Date(c.created_at).toLocaleDateString()}"`
     ]);
     const csvContent = [headers.join(","), ...csvData.map(row => row.join(","))].join("\n");
-    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(["﻿" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -419,12 +245,10 @@ export default function AdminDashboard() {
   };
 
   const filteredProjects = useMemo(() => {
+    if (!searchQuery) return projects;
     const q = searchQuery.toLowerCase();
-    return projects.filter(p =>
-      (!brandFilter || String(p.brand_id) === String(brandFilter)) &&
-      (!q || p.title?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q))
-    );
-  }, [projects, searchQuery, brandFilter]);
+    return projects.filter(p => p.title?.toLowerCase().includes(q) || p.category?.toLowerCase().includes(q));
+  }, [projects, searchQuery]);
 
   const filteredClients = useMemo(() => {
     if (!searchQuery) return clients;
@@ -447,8 +271,8 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex font-sans text-slate-800" dir="ltr">
-      
-      <ConfirmModal 
+
+      <ConfirmModal
         isOpen={confirmState.isOpen}
         onClose={() => setConfirmState({ ...confirmState, isOpen: false })}
         onConfirm={confirmState.action}
@@ -457,10 +281,10 @@ export default function AdminDashboard() {
         isDestructive={confirmState.isDestructive}
       />
 
-      <ImageLightbox 
-        isOpen={!!lightboxImage} 
-        onClose={() => setLightboxImage(null)} 
-        imageUrl={lightboxImage} 
+      <ImageLightbox
+        isOpen={!!lightboxImage}
+        onClose={() => setLightboxImage(null)}
+        imageUrl={lightboxImage}
       />
 
       {isSidebarOpen && <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)} />}
@@ -470,7 +294,7 @@ export default function AdminDashboard() {
           <h2 className="text-2xl font-extrabold text-white tracking-tighter">Kohedroo<span className="text-indigo-500">.</span></h2>
           <button onClick={() => setIsSidebarOpen(false)} className="md:hidden text-slate-400"><X size={20}/></button>
         </div>
-        
+
         <nav className="flex-1 px-4 space-y-1 mt-4 overflow-y-auto">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -500,12 +324,12 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-4 flex-1">
             <button onClick={() => setIsSidebarOpen(true)} className="md:hidden p-2 bg-slate-100 rounded-lg"><Menu size={20}/></button>
             <h1 className="text-xl font-bold text-slate-800 capitalize hidden md:block">{activeTab}</h1>
-            
+
             <div className="relative max-w-md w-full ml-4 hidden md:block">
               <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input 
-                type="text" 
-                placeholder="Search projects, clients..." 
+              <input
+                type="text"
+                placeholder="Search projects, clients..."
                 className="w-full pl-10 pr-4 py-2 bg-slate-100 border-none rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm transition-all"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -553,17 +377,23 @@ export default function AdminDashboard() {
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-lg mb-8 relative">
               <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-slate-400 hover:text-red-500 bg-slate-100 hover:bg-red-50 p-2 rounded-full transition-colors"><X size={20}/></button>
               <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-                {editingId ? <Pencil size={20}/> : <Plus size={20}/>} 
+                {editingId ? <Pencil size={20}/> : <Plus size={20}/>}
                 {editingId ? "Edit Item" : (activeTab === "about" ? "Edit About Section" : "Add New Item")}
               </h2>
-              
+
               <form onSubmit={handleSubmit} className="space-y-4">
-                
+
                 {activeTab === "about" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Profile Image</label>
-                      <DropZone accept="image/*" value={file} onChange={setFile} existingUrl={siteContent.about_image} compact label="Drop your photo here, or click" />
+                      <DropUploader
+                        accept="image/*"
+                        label="Drag & drop your photo here, or click"
+                        value={formData.about_image}
+                        onBusyChange={trackUpload}
+                        onUploaded={(url) => setFormData(prev => ({ ...prev, about_image: url }))}
+                      />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Main Headline</label>
@@ -590,6 +420,24 @@ export default function AdminDashboard() {
 
                 {activeTab === "projects" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Media (image or video) *</label>
+                      <DropUploader
+                        label="Drag & drop an image or video here, or click"
+                        value={formData.media_url}
+                        onBusyChange={trackUpload}
+                        onUploaded={(url, f) => {
+                          const isVid = f.type.startsWith('video/');
+                          setFormData(prev => ({
+                            ...prev,
+                            media_url: url,
+                            type: isVid ? 'video' : 'image',
+                            video_url: isVid ? url : null,
+                          }));
+                        }}
+                        onClear={() => setFormData(prev => ({ ...prev, media_url: null, video_url: null }))}
+                      />
+                    </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Project Title *</label>
                       <input type="text" placeholder="e.g. Joyalukkas Campaign" className="input" required value={formData.title || ''} onChange={(e) => setFormData({...formData, title: e.target.value})} />
@@ -613,17 +461,6 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
                       <textarea placeholder="What was this project about?" className="input" rows="3" value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
                     </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Type</label>
-                      <select className="input" value={formData.type || 'image'} onChange={(e) => setFormData({...formData, type: e.target.value})}>
-                        <option value="image">Image</option>
-                        <option value="video">Video</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Replace media (auto-compressed)</label>
-                      <DropZone accept="image/*,video/*" value={file} onChange={(f) => { setFile(f); if (f) setFormData((d) => ({ ...d, type: f.type.startsWith("video/") ? "video" : "image" })); }} existingUrl={formData.media_url} compact label="Drop image or video" />
-                    </div>
                   </div>
                 )}
 
@@ -642,16 +479,25 @@ export default function AdminDashboard() {
                       <textarea placeholder="Short description about the work done for this brand..." className="input" rows="3" value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Logo (transparent PNG) *</label>
-                      <DropZone accept="image/*" value={file} onChange={setFile} existingUrl={formData.logo_url} compact label="Drop the logo here" />
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Logo (Transparent PNG) *</label>
+                      <DropUploader
+                        accept="image/*"
+                        label="Drop the logo here, or click"
+                        value={formData.logo_url}
+                        onBusyChange={trackUpload}
+                        onUploaded={(url) => setFormData(prev => ({ ...prev, logo_url: url }))}
+                      />
                     </div>
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Logo background (optional)</label>
-                      <div className="flex items-center gap-3">
-                        <input type="color" aria-label="Logo background colour" className="w-12 h-10 rounded border border-slate-300 bg-white p-1" value={formData.logo_bg || "#ffffff"} onChange={(e) => setFormData({ ...formData, logo_bg: e.target.value })} />
-                        {formData.logo_bg && <button type="button" className="text-xs text-slate-500 underline" onClick={() => setFormData({ ...formData, logo_bg: null })}>Reset</button>}
-                        <span className="text-xs text-slate-500">Use a dark colour for white logos.</span>
-                      </div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Cover Image (Background)</label>
+                      <DropUploader
+                        accept="image/*"
+                        label="Drop the cover here, or click"
+                        value={formData.cover_url}
+                        onBusyChange={trackUpload}
+                        onUploaded={(url) => setFormData(prev => ({ ...prev, cover_url: url }))}
+                        onClear={() => setFormData(prev => ({ ...prev, cover_url: null }))}
+                      />
                     </div>
                   </div>
                 )}
@@ -667,9 +513,9 @@ export default function AdminDashboard() {
 
                 {activeTab === "packages" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Package Name *</label><input type="text" placeholder="e.g. Gold Package" className="input" required value={formData.title || ''} onChange={(e) => setFormData({...formData, title: e.target.value})} /></div>
-                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Price (text, e.g. $500 or $300/mo)</label><input type="text" placeholder="$500" className="input" value={formData.price || ''} onChange={(e) => setFormData({...formData, price: e.target.value})} /></div>
-                    <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-2">Features (one per line)</label><textarea rows="5" placeholder={"Logo Design\nSocial Media Kit\n2 Revisions"} className="input" value={formData.features || ''} onChange={(e) => setFormData({...formData, features: e.target.value})} /></div>
+                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Package Name *</label><input type="text" placeholder="e.g. Gold Package" className="input" required value={formData.name || ''} onChange={(e) => setFormData({...formData, name: e.target.value})} /></div>
+                    <div><label className="block text-sm font-semibold text-slate-700 mb-2">Price ($)</label><input type="number" placeholder="500" className="input" value={formData.price || ''} onChange={(e) => setFormData({...formData, price: e.target.value})} /></div>
+                    <div className="md:col-span-2"><label className="block text-sm font-semibold text-slate-700 mb-2">Features (comma separated)</label><input type="text" placeholder="Logo Design, Social Media Kit, 2 Revisions" className="input" value={formData.features || ''} onChange={(e) => setFormData({...formData, features: e.target.value})} /></div>
                   </div>
                 )}
 
@@ -686,7 +532,7 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Package</label>
                       <select className="input" value={formData.package_id || ''} onChange={(e) => setFormData({...formData, package_id: e.target.value})}>
                         <option value="">Select Package</option>
-                        {packages.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+                        {packages.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                       </select>
                     </div>
                     <div><label className="block text-sm font-semibold text-slate-700 mb-2">Date *</label><input type="date" className="input" required value={formData.date || ''} onChange={(e) => setFormData({...formData, date: e.target.value})} /></div>
@@ -716,8 +562,8 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="flex gap-3 pt-4 border-t border-slate-100">
-                  <button type="submit" disabled={loading} className="btn-primary flex-1 md:flex-none px-8">
-                    {loading ? "Saving & Compressing..." : "Save Data"}
+                  <button type="submit" disabled={loading || uploadingCount > 0} className="btn-primary flex-1 md:flex-none px-8">
+                    {uploadingCount > 0 ? "Uploading..." : loading ? "Saving..." : "Save Data"}
                   </button>
                   <button type="button" onClick={() => setIsFormOpen(false)} className="bg-slate-100 text-slate-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-slate-200 transition-colors">
                     Cancel
@@ -729,81 +575,35 @@ export default function AdminDashboard() {
 
           {activeTab !== "overview" && activeTab !== "about" && activeTab !== "content" && (
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-              
+
               {activeTab === "projects" && (
                 projects.length === 0 && !isFormOpen ? (
                   <EmptyState icon={Briefcase} title="No Projects Yet" description="Start building your portfolio by adding your first project. You can upload an image or video." btnText="Add First Project" onClick={() => handleOpenForm()} />
                 ) : (
-                  <>
-                  <div className="mb-4 space-y-3">
-                    <DropZone
-                      accept="image/*,video/*"
-                      multiple
-                      onFiles={handleBulkDrop}
-                      label="Drop images or videos here (as many as you want)"
-                      hint={brandFilter ? `They will be added to: ${brands.find((b) => String(b.id) === String(brandFilter))?.name}` : "Pick a brand below first to file them under it"}
-                    />
-                    {uploadQueue.length > 0 && (
-                      <ul className="text-xs space-y-1">
-                        {uploadQueue.map((u) => (
-                          <li key={u.id} className="flex justify-between bg-slate-50 border border-slate-200 rounded-lg px-3 py-2">
-                            <span className="truncate">{u.name}</span>
-                            <span className={u.status === "error" ? "text-red-600" : u.status === "done" ? "text-emerald-600" : "text-slate-500"}>
-                              {u.status === "waiting" ? "Waiting" : u.status === "uploading" ? "Uploading..." : u.status === "done" ? "Done" : "Failed"}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <label htmlFor="brandFilter" className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Brand</label>
-                      <select id="brandFilter" className="input !w-auto !py-2" value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)}>
-                        <option value="">All brands</option>
-                        {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                      </select>
-                      {(brandFilter || searchQuery) && <span className="text-xs text-slate-400">Reordering is off while filtering</span>}
-                    </div>
-                  </div>
                   <Reorder.Group axis="y" values={filteredProjects} onReorder={(newOrder) => handleReorder("projects", newOrder)} className="space-y-3">
                     {filteredProjects.map((p) => (
-                      <Reorder.Item key={p.id} value={p} dragListener={!brandFilter && !searchQuery} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-colors">
+                      <Reorder.Item key={p.id} value={p} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-colors">
                         <div className="flex items-center gap-4">
                           <GripVertical size={20} className="text-slate-300" />
-                          <div className="w-12 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLightboxImage(p.media_url)}>
+                          <div className="w-12 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => p.type !== 'video' && setLightboxImage(p.media_url)}>
                             {p.type === 'video' ? (
-                               <video src={`${p.video_url || p.media_url}#t=0.1`} muted preload="metadata" className="w-full h-full object-cover" />
+                               <video src={`${p.video_url || p.media_url}#t=0.1`} muted preload="metadata" playsInline className="w-full h-full object-cover" />
                             ) : (
                                <img src={p.media_url} alt={p.title} className="w-full h-full object-cover" />
                             )}
                           </div>
                           <div>
-                            {inlineEdit?.id === p.id ? (
-                              <input
-                                autoFocus
-                                className="input !py-1 !px-2 font-bold"
-                                value={inlineEdit.value}
-                                onChange={(e) => setInlineEdit({ id: p.id, value: e.target.value })}
-                                onBlur={saveInlineTitle}
-                                onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); if (e.key === "Escape") setInlineEdit(null); }}
-                              />
-                            ) : (
-                              <button type="button" title="Click to rename" onClick={() => setInlineEdit({ id: p.id, value: p.title || "" })} className="font-bold text-slate-800 text-left hover:underline">{p.title || "Untitled"}</button>
-                            )}
-                            <p className="text-xs text-slate-500">{p.type === "video" ? "Video" : "Image"}{p.year ? ` • ${p.year}` : ""}</p>
+                            <p className="font-bold text-slate-800">{p.title}</p>
+                            <p className="text-xs text-slate-500">{p.category} • {p.year}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <select aria-label="Brand" className="input !w-auto !py-1.5 !text-xs hidden sm:block" value={p.brand_id || ""} onChange={(e) => changeProjectBrand(p.id, e.target.value)}>
-                            <option value="">No brand</option>
-                            {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-                          </select>
                           <button onClick={() => handleOpenForm(p)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil size={16}/></button>
                           <button onClick={() => handleDeleteClick("projects", p.id, p.title)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
                         </div>
                       </Reorder.Item>
                     ))}
                   </Reorder.Group>
-                  </>
                 )
               )}
 
@@ -844,13 +644,13 @@ export default function AdminDashboard() {
                         <div className="flex items-center gap-4">
                           <GripVertical size={20} className="text-slate-300" />
                           <div>
-                            <p className="font-bold text-slate-800">{p.title}</p>
-                            <p className="text-xs text-slate-500">{p.price}</p>
+                            <p className="font-bold text-slate-800">{p.name}</p>
+                            <p className="text-xs text-slate-500">${p.price}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <button onClick={() => handleOpenForm(p)} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil size={16}/></button>
-                          <button onClick={() => handleDeleteClick("packages", p.id, p.title)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
+                          <button onClick={() => handleDeleteClick("packages", p.id, p.name)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
                         </div>
                       </Reorder.Item>
                     ))}
@@ -916,7 +716,7 @@ export default function AdminDashboard() {
                           <tr key={b.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="p-4">
                               <p className="font-bold text-slate-800">{b.clients?.name || 'Unknown'}</p>
-                              <p className="text-xs text-slate-500">{b.packages?.title || 'No Package'}</p>
+                              <p className="text-xs text-slate-500">{b.packages?.name || 'No Package'}</p>
                             </td>
                             <td className="p-4 text-sm text-slate-600">{b.date} at {b.time}</td>
                             <td className="p-4">
@@ -944,53 +744,44 @@ export default function AdminDashboard() {
           )}
 
           {activeTab === "content" && (
-            <div className="space-y-6 max-w-3xl">
-              <form onSubmit={saveSettings} className="space-y-6">
-                {SETTINGS_GROUPS.map((g) => (
-                  <section key={g.title} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                    <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4">{g.title}</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {g.fields.map((f) => (
-                        <div key={f.key} className={f.multiline ? "sm:col-span-2" : ""}>
-                          <label htmlFor={`set-${f.key}`} className="block text-sm font-semibold text-slate-700 mb-2">{f.label}</label>
-                          {f.multiline ? (
-                            <textarea id={`set-${f.key}`} rows="3" className="input" placeholder={f.placeholder} value={settingsForm[f.key] || ""} onChange={(e) => setSettingsForm({ ...settingsForm, [f.key]: e.target.value })} />
-                          ) : (
-                            <input id={`set-${f.key}`} type={f.type || "text"} className="input" placeholder={f.placeholder} value={settingsForm[f.key] || ""} onChange={(e) => setSettingsForm({ ...settingsForm, [f.key]: e.target.value })} />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-                <p className="text-sm text-slate-500">The About section (photo, bio, skills, stats) has its own tab.</p>
-                <div className="sticky bottom-4">
-                  <button type="submit" disabled={loading} className="btn-primary px-8 shadow-lg">{loading ? "Saving..." : "Save settings"}</button>
-                </div>
-              </form>
-
-              {Object.keys(siteContent).filter((k) => !SETTINGS_KEYS.includes(k)).length > 0 && (
-                <details className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
-                  <summary className="cursor-pointer text-sm font-bold text-slate-600 uppercase tracking-wider">Other saved texts (advanced)</summary>
-                  <table className="w-full text-left border-collapse mt-4">
-                    <tbody className="divide-y divide-slate-100">
-                      {Object.entries(siteContent).filter(([k]) => !SETTINGS_KEYS.includes(k)).map(([key, value]) => (
-                        <tr key={key}>
-                          <td className="p-3 font-bold text-slate-800 text-sm">{key}</td>
-                          <td className="p-3 text-sm text-slate-600 truncate max-w-xs">{value}</td>
-                          <td className="p-3 text-right space-x-2">
-                            <button type="button" onClick={() => handleOpenForm({ id: key, key: key, value: value })} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil size={16}/></button>
-                            <button type="button" onClick={() => handleDeleteClick("site_content", key, key)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </details>
-              )}
-            </div>
+             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 overflow-x-auto">
+               <div className="flex justify-between items-center mb-6">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-800">Site Content (Texts)</h2>
+                    <p className="text-sm text-slate-500">Manage every text displayed on your website.</p>
+                  </div>
+                  <button onClick={() => handleOpenForm()} className="flex items-center gap-2 bg-black text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-slate-800 transition-all shadow-sm">
+                    <Plus size={16} /> Add New Key
+                  </button>
+               </div>
+               {Object.keys(siteContent).length === 0 && !isFormOpen ? (
+                 <EmptyState icon={Database} title="No Content Keys" description="Content keys are used to display dynamic text on your website. Click add to create one." btnText="Add New Key" onClick={() => handleOpenForm()} />
+               ) : (
+               <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs uppercase tracking-wider">
+                      <th className="p-4 font-semibold">Key</th>
+                      <th className="p-4 font-semibold">Value</th>
+                      <th className="p-4 font-semibold text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {Object.entries(siteContent).map(([key, value]) => (
+                      <tr key={key} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="p-4 font-bold text-slate-800 text-sm">{key}</td>
+                        <td className="p-4 text-sm text-slate-600 truncate max-w-xs">{value}</td>
+                        <td className="p-4 text-right space-x-2">
+                          <button onClick={() => handleOpenForm({ id: key, key: key, value: value })} className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil size={16}/></button>
+                          <button onClick={() => handleDeleteClick("site_content", key, key)} className="p-2 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 size={16}/></button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+               )}
+             </div>
           )}
-          
+
           {activeTab === "about" && !isFormOpen && (
             <div className="bg-white p-10 rounded-2xl border border-slate-200 shadow-sm text-center">
               <UserCircle size={48} className="mx-auto text-indigo-500 mb-4 opacity-50" />
