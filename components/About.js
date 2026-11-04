@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle2, User } from 'lucide-react'; // ضفنا User
 import Link from 'next/link';
 import AnimatedCounter from './AnimatedCounter';
-import { useEffect } from 'react'; // ضفنا useEffect
 
 export default function About({ settings }) {
   const skillsString = settings?.about_skills || 'Art Direction, AI Commercial Videos, Brand Identity, Visual Storytelling, Social Media Campaigns';
@@ -12,11 +11,6 @@ export default function About({ settings }) {
   const years = settings?.stat_years || '13+';
   const projects = settings?.stat_projects || '100+';
   const aboutImage = settings?.about_image;
-
-  // عشان نتأكد إن اللينك واصل من الداتابيز
-  useEffect(() => {
-    console.log("🔗 رابط صورة الأبوت القادم من الداتابيز:", aboutImage);
-  }, [aboutImage]);
 
   return (
     <section id="about" className="relative z-10 bg-zinc-50 pt-16 pb-20 md:py-28">

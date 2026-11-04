@@ -299,8 +299,8 @@ export default function AdminDashboard() {
           if (formData.type === 'video') data.video_url = uploadedUrl;
         }
         if (!editingId) data.sort_order = projects.length;
-        if (editingId) await supabase.from("projects").update(data).eq("id", editingId);
-        else await supabase.from("projects").insert([data]);
+        const res = editingId ? await supabase.from("projects").update(data).eq("id", editingId) : await supabase.from("projects").insert([data]);
+        if (res.error) throw res.error;
       } 
       else if (activeTab === "brands") {
         const data = { ...formData };
@@ -308,12 +308,13 @@ export default function AdminDashboard() {
         if (uploadedCoverUrl) data.cover_url = uploadedCoverUrl;
         data.size = parseFloat(formData.size) || 1;
         if (!editingId) data.sort_order = brands.length;
-        if (editingId) await supabase.from("brands").update(data).eq("id", editingId);
-        else await supabase.from("brands").insert([data]);
+        const res = editingId ? await supabase.from("brands").update(data).eq("id", editingId) : await supabase.from("brands").insert([data]);
+        if (res.error) throw res.error;
       }
       else if (activeTab === "clients") {
-        if (editingId) await supabase.from("clients").update(formData).eq("id", editingId);
-        else await supabase.from("clients").insert([formData]);
+        const { id: _i, created_at: _c, ...clientData } = formData;
+        const res = editingId ? await supabase.from("clients").update(clientData).eq("id", editingId) : await supabase.from("clients").insert([clientData]);
+        if (res.error) throw res.error;
       } 
       else if (activeTab === "packages") {
         const data = {
@@ -322,16 +323,19 @@ export default function AdminDashboard() {
           features: formData.features || '',
         };
         if (!editingId) data.sort_order = packages.length;
-        if (editingId) await supabase.from("packages").update(data).eq("id", editingId);
-        else await supabase.from("packages").insert([data]);
+        const res = editingId ? await supabase.from("packages").update(data).eq("id", editingId) : await supabase.from("packages").insert([data]);
+        if (res.error) throw res.error;
       } 
       else if (activeTab === "bookings") {
-        if (editingId) await supabase.from("bookings").update(formData).eq("id", editingId);
-        else await supabase.from("bookings").insert([formData]);
+        // نبعت الحقول بتاعة جدول الحجوزات بس (من غير clients/packages المدمجة)
+        const { clients: _cl, packages: _pk, id: _id, created_at: _ca, ...bookingData } = formData;
+        const res = editingId ? await supabase.from("bookings").update(bookingData).eq("id", editingId) : await supabase.from("bookings").insert([bookingData]);
+        if (res.error) throw res.error;
       } 
       else if (activeTab === "content") {
         for (const [key, value] of Object.entries(formData)) {
-          await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
+          const { error } = await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
+          if (error) throw error;
         }
       }
       else if (activeTab === "about") {
@@ -344,7 +348,10 @@ export default function AdminDashboard() {
         };
         if (uploadedUrl) contentUpdates.about_image = uploadedUrl;
         for (const [key, value] of Object.entries(contentUpdates)) {
-          if (value) await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
+          if (value) {
+            const { error } = await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
+            if (error) throw error;
+          }
         }
       }
 
@@ -366,7 +373,8 @@ export default function AdminDashboard() {
       isDestructive: true,
       action: async () => {
         try {
-          await supabase.from(table).delete().eq("id", id);
+          const { error } = await supabase.from(table).delete().eq(table === "site_content" ? "key" : "id", id);
+          if (error) throw error;
           fetchAllData();
           toast.success("Deleted successfully");
         } catch (error) {
@@ -377,13 +385,20 @@ export default function AdminDashboard() {
   };
 
   const handleReorder = async (table, newOrder) => {
-    if (table === "projects") setProjects(newOrder);
+    if (table === "projects") {
+      // لو فيه بحث/فلتر شغال، نرتب العناصر الظاهرة جوه أماكنها بس ونحافظ على الباقي
+      const visibleIds = new Set(newOrder.map((i) => i.id));
+      let k = 0;
+      newOrder = projects.map((p) => (visibleIds.has(p.id) ? newOrder[k++] : p));
+      setProjects(newOrder);
+    }
     if (table === "brands") setBrands(newOrder);
     if (table === "packages") setPackages(newOrder);
 
     const updates = newOrder.map((item, index) => ({ id: item.id, sort_order: index }));
     for (const update of updates) {
-      await supabase.from(table).update({ sort_order: update.sort_order }).eq("id", update.id);
+      const { error } = await supabase.from(table).update({ sort_order: update.sort_order }).eq("id", update.id);
+      if (error) { toast.error("Reorder failed: " + error.message); fetchAllData(); return; }
     }
   };
 

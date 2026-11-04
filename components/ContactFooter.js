@@ -5,8 +5,17 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MessageCircle, Mail, ArrowUpRight, ArrowUp, MapPin } from 'lucide-react';
 import { useLenis } from 'lenis/react';
+import { useState, useEffect } from 'react';
 
 export default function ContactFooter({ settings }) {
+  const [localTime, setLocalTime] = useState('');
+  useEffect(() => {
+    const tick = () => setLocalTime(new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit' }));
+    tick();
+    const id = setInterval(tick, 30000);
+    return () => clearInterval(id);
+  }, []);
+
   const cleanPhoneNumber = settings?.whatsapp?.replace(/[^0-9]/g, '') || '971555780408';
   const whatsappUrl = `https://wa.me/${cleanPhoneNumber}`;
   const emailAddress = settings?.email || 'hello@kohedroo.com';
@@ -20,8 +29,8 @@ export default function ContactFooter({ settings }) {
   ];
 
   const links = [
-    { name: 'Work', href: '#work' },
-    { name: 'About', href: '#about' },
+    { name: 'Brands', href: '/#brands' },
+    { name: 'About', href: '/#about' },
     { name: 'Book Now', href: '/book-now' },
     { name: 'All Projects', href: '/work' },
   ];
@@ -188,7 +197,7 @@ export default function ContactFooter({ settings }) {
           </div>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Local Time: {new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit' })} GST</span>
+            <span>Local Time: {localTime} GST</span>
           </div>
         </div>
       </div>
