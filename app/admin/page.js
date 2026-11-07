@@ -566,31 +566,8 @@ export default function AdminDashboard() {
                 )}
 
                 {activeTab === "projects" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Project Title *</label>
-                      <input type="text" placeholder="e.g. Joyalukkas Campaign" className="input" required value={formData.title || ''} onChange={(e) => setFormData({...formData, title: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Brand (Company)</label>
-                      <select className="input" value={formData.brand_id || ''} onChange={(e) => setFormData({...formData, brand_id: e.target.value || null})}>
-                        <option value="">Select Brand (Optional)</option>
-                        {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Category</label>
-                      <input type="text" placeholder="e.g. Video, Branding" className="input" value={formData.category || ''} onChange={(e) => setFormData({...formData, category: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Year</label>
-                      <input type="text" placeholder="2024" className="input" value={formData.year || ''} onChange={(e) => setFormData({...formData, year: e.target.value})} />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
-                      <textarea placeholder="What was this project about?" className="input" rows="3" value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
-                    </div>
-                    <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">
                         Media (drag & drop) {formData.type && <span className="text-xs font-normal text-slate-400">— detected: {formData.type}</span>}
                       </label>
@@ -600,6 +577,8 @@ export default function AdminDashboard() {
                         currentUrl={formData.media_url}
                         onBusy={trackBusy}
                         onDone={async (url, f) => {
+                          // العنوان بيتاخد تلقائي من اسم الملف (من غير الامتداد)
+                          const autoTitle = f.name.replace(/\.[^/.]+$/, '');
                           if (f.type.startsWith('video/')) {
                             const poster = await makePoster(f);
                             let posterUrl = null;
@@ -610,12 +589,19 @@ export default function AdminDashboard() {
                                 console.warn("Poster upload failed", err);
                               }
                             }
-                            setFormData((p) => ({ ...p, type: 'video', video_url: url, media_url: posterUrl || url }));
+                            setFormData((p) => ({ ...p, title: p.title || autoTitle, type: 'video', video_url: url, media_url: posterUrl || url }));
                           } else {
-                            setFormData((p) => ({ ...p, type: 'image', video_url: null, media_url: url }));
+                            setFormData((p) => ({ ...p, title: p.title || autoTitle, type: 'image', video_url: null, media_url: url }));
                           }
                         }}
                       />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Brand *</label>
+                      <select className="input" required value={formData.brand_id || ''} onChange={(e) => setFormData({...formData, brand_id: e.target.value || null})}>
+                        <option value="">Select Brand</option>
+                        {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                      </select>
                     </div>
                   </div>
                 )}
