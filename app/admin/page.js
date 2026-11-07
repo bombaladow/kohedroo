@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, supabaseUrl, supabaseAnonKey } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import {
   LayoutDashboard, Image as ImageIcon, Briefcase, Users,
@@ -10,9 +10,9 @@ import {
 } from "lucide-react";
 import { motion, Reorder } from "framer-motion";
 import { toast } from 'sonner';
+import imageCompression from 'browser-image-compression';
 import ConfirmModal from "@/components/ConfirmModal";
 import ImageLightbox from "@/components/ImageLightbox";
-import DropUploader from "@/components/DropUploader";
 import { useLoading } from "@/lib/LoadingContext";
 
 // مكون الحالة الفارغة (Empty State)
@@ -34,6 +34,123 @@ const EmptyState = ({ icon: Icon, title, description, btnText, onClick }) => (
   </div>
 );
 
+// 🚀 رفع مباشر على Supabase Storage مع شريط تقدم حقيقي (من غير ضغط فيديو)
+// الصور بس بتتضغط (سريع جداً لأنه بيشتغل في Web Worker)
+const uploadMedia = async (file, onProgress, bucket = 'portfolio-media') => {
+  let f = file;
+  if (file.type.startsWith('image/')) {
+    try {
+      f = await imageCompression(file, { maxSizeMB: 1, maxWidthOrHeight: 1920, useWebWorker: true });
+    } catch (err) {
+      console.warn("Image compression failed, uploading original.", err);
+    }
+  }
+
+  const ext = (f.name || file.name).split('.').pop();
+  const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) throw new Error("Session expired. Please log in again.");
+
+  await new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${supabaseUrl}/storage/v1/object/${bucket}/${path}`);
+    xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+    xhr.setRequestHeader('apikey', supabaseAnonKey);
+    xhr.setRequestHeader('Content-Type', f.type || 'application/octet-stream');
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => (xhr.status < 300 ? resolve() : reject(new Error(xhr.responseText || `HTTP ${xhr.status}`)));
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(f);
+  });
+
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+};
+
+// 🖼️ صورة الغلاف للفيديو (بتتاخد من فريم من الفيديو نفسه في أقل من ثانية)
+const makePoster = (file) =>
+  new Promise((resolve) => {
+    const v = document.createElement('video');
+    const objectUrl = URL.createObjectURL(file);
+    let done = false;
+    const finish = (blob) => {
+      if (done) return;
+      done = true;
+      URL.revokeObjectURL(objectUrl);
+      resolve(blob);
+    };
+
+    v.muted = true;
+    v.playsInline = true;
+    v.preload = 'metadata';
+    v.src = objectUrl;
+    v.onloadeddata = () => { v.currentTime = Math.min(1, (v.duration || 2) / 2); };
+    v.onseeked = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = v.videoWidth;
+        c.height = v.videoHeight;
+        c.getContext('2d').drawImage(v, 0, 0);
+        c.toBlob((b) => finish(b), 'image/jpeg', 0.8);
+      } catch {
+        finish(null);
+      }
+    };
+    v.onerror = () => finish(null);
+    setTimeout(() => finish(null), 8000); // لو المتصفح مقدرش، نكمل من غير poster
+  });
+
+// 📥 مكون السحب والإفلات (Drag & Drop)
+const DropZone = ({ accept, label, currentUrl, onDone, onBusy }) => {
+  const [progress, setProgress] = useState(null);
+  const [over, setOver] = useState(false);
+
+  const handle = async (file) => {
+    if (!file) return;
+    setProgress(0);
+    onBusy?.(true);
+    try {
+      const url = await uploadMedia(file, setProgress);
+      await onDone(url, file);
+      toast.success("Uploaded!");
+    } catch (err) {
+      toast.error("Upload failed: " + err.message);
+    } finally {
+      setProgress(null);
+      onBusy?.(false);
+    }
+  };
+
+  return (
+    <label
+      onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+      onDragLeave={() => setOver(false)}
+      onDrop={(e) => { e.preventDefault(); setOver(false); handle(e.dataTransfer.files[0]); }}
+      className={`block cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${over ? 'border-indigo-500 bg-indigo-50' : 'border-slate-300 hover:border-slate-400'}`}
+    >
+      <input
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => { handle(e.target.files[0]); e.target.value = ''; }}
+      />
+      {progress !== null ? (
+        <div>
+          <div className="h-2 bg-slate-200 rounded-full overflow-hidden mb-2">
+            <div className="h-full bg-indigo-600 transition-all" style={{ width: `${progress}%` }} />
+          </div>
+          <p className="text-xs text-slate-500">{progress === 100 ? "Finishing..." : `${progress}%`}</p>
+        </div>
+      ) : currentUrl ? (
+        <p className="text-sm text-emerald-600 font-semibold">File ready. Drop a new one to replace.</p>
+      ) : (
+        <p className="text-sm text-slate-500">{label}</p>
+      )}
+    </label>
+  );
+};
+
 export default function AdminDashboard() {
   const { setIsDataLoaded } = useLoading();
   const [activeTab, setActiveTab] = useState("overview");
@@ -54,11 +171,12 @@ export default function AdminDashboard() {
 
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(false);
-  const [uploadingCount, setUploadingCount] = useState(0); // عدد الرفعات الشغالة دلوقتي
+  const [uploadingCount, setUploadingCount] = useState(0);
   const [editingId, setEditingId] = useState(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
 
-  const trackUpload = (busy) => setUploadingCount((c) => Math.max(0, c + (busy ? 1 : -1)));
+  const isUploading = uploadingCount > 0;
+  const trackBusy = (busy) => setUploadingCount((c) => Math.max(0, c + (busy ? 1 : -1)));
 
   useEffect(() => {
     setIsDataLoaded(true);
@@ -117,8 +235,9 @@ export default function AdminDashboard() {
 
   const handleOpenForm = (data = null) => {
     if (data) {
-      setFormData(data);
-      if (data.features) setFormData(prev => ({ ...prev, features: data.features.join(', ') }));
+      const next = { ...data };
+      if (Array.isArray(data.features)) next.features = data.features.join(', ');
+      setFormData(next);
       setEditingId(data.id);
     } else {
       const defaults = {};
@@ -132,48 +251,69 @@ export default function AdminDashboard() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // الملفات بتترفع أول ما تسيبها في الـ Drop Zone، والـ URLs بتتخزن في formData.
+  // زرار Save بيحفظ البيانات بس.
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (uploadingCount > 0) return toast.info("Wait for the upload to finish first");
-    if (activeTab === "projects" && !formData.media_url) return toast.error("Please upload an image or video first");
-    if (activeTab === "brands" && !formData.logo_url) return toast.error("Please upload the brand logo first");
-
+    if (isUploading) return toast.error("Please wait for the upload to finish.");
     setLoading(true);
     try {
       if (activeTab === "projects") {
-        // الرفع حصل خلاص، والرابط جاهز في formData
+        if (!formData.media_url) throw new Error("Please upload an image or video first.");
         const data = { ...formData };
         if (!editingId) data.sort_order = projects.length;
-        if (editingId) await supabase.from("projects").update(data).eq("id", editingId);
-        else await supabase.from("projects").insert([data]);
+        const res = editingId
+          ? await supabase.from("projects").update(data).eq("id", editingId)
+          : await supabase.from("projects").insert([data]);
+        if (res.error) throw res.error;
       }
       else if (activeTab === "brands") {
-        const data = { ...formData };
-        data.size = parseFloat(formData.size) || 1;
+        if (!formData.logo_url) throw new Error("Please upload the brand logo first.");
+        const data = { ...formData, size: parseFloat(formData.size) || 1 };
         if (!editingId) data.sort_order = brands.length;
-        if (editingId) await supabase.from("brands").update(data).eq("id", editingId);
-        else await supabase.from("brands").insert([data]);
+        const res = editingId
+          ? await supabase.from("brands").update(data).eq("id", editingId)
+          : await supabase.from("brands").insert([data]);
+        if (res.error) throw res.error;
       }
       else if (activeTab === "clients") {
-        if (editingId) await supabase.from("clients").update(formData).eq("id", editingId);
-        else await supabase.from("clients").insert([formData]);
+        const res = editingId
+          ? await supabase.from("clients").update(formData).eq("id", editingId)
+          : await supabase.from("clients").insert([formData]);
+        if (res.error) throw res.error;
       }
       else if (activeTab === "packages") {
-        const featuresArray = formData.features ? formData.features.split(',').map(f => f.trim()) : [];
+        const featuresArray = formData.features
+          ? formData.features.split(',').map(f => f.trim()).filter(Boolean)
+          : [];
         const data = { ...formData, features: featuresArray };
         if (!editingId) data.sort_order = packages.length;
-        if (editingId) await supabase.from("packages").update(data).eq("id", editingId);
-        else await supabase.from("packages").insert([data]);
+        const res = editingId
+          ? await supabase.from("packages").update(data).eq("id", editingId)
+          : await supabase.from("packages").insert([data]);
+        if (res.error) throw res.error;
       }
       else if (activeTab === "bookings") {
-        if (editingId) await supabase.from("bookings").update(formData).eq("id", editingId);
-        else await supabase.from("bookings").insert([formData]);
+        // بنبعت الأعمدة بتاعة الجدول بس (من غير clients / packages اللي جاية من الـ join)
+        const data = {
+          client_id: formData.client_id,
+          package_id: formData.package_id || null,
+          date: formData.date,
+          time: formData.time,
+          status: formData.status || 'Pending',
+          notes: formData.notes || null,
+        };
+        const res = editingId
+          ? await supabase.from("bookings").update(data).eq("id", editingId)
+          : await supabase.from("bookings").insert([data]);
+        if (res.error) throw res.error;
       }
       else if (activeTab === "content") {
-        for (const [key, value] of Object.entries(formData)) {
-          await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
-        }
+        const res = await supabase.from("site_content").upsert(
+          { key: formData.key, value: formData.value },
+          { onConflict: 'key' }
+        );
+        if (res.error) throw res.error;
       }
       else if (activeTab === "about") {
         const contentUpdates = {
@@ -184,13 +324,17 @@ export default function AdminDashboard() {
           stat_projects: formData.stat_projects,
           about_image: formData.about_image,
         };
-        for (const [key, value] of Object.entries(contentUpdates)) {
-          if (value) await supabase.from("site_content").upsert({ key, value }, { onConflict: 'key' });
-        }
+        const rows = Object.entries(contentUpdates)
+          .filter(([, value]) => value)
+          .map(([key, value]) => ({ key, value }));
+        const res = await supabase.from("site_content").upsert(rows, { onConflict: 'key' });
+        if (res.error) throw res.error;
       }
 
       toast.success(editingId ? "Updated successfully!" : "Saved successfully!");
       setIsFormOpen(false);
+      setFormData({});
+      setEditingId(null);
       fetchAllData();
     } catch (error) {
       toast.error("Error: " + error.message);
@@ -207,7 +351,9 @@ export default function AdminDashboard() {
       isDestructive: true,
       action: async () => {
         try {
-          await supabase.from(table).delete().eq("id", id);
+          const column = table === "site_content" ? "key" : "id";
+          const { error } = await supabase.from(table).delete().eq(column, id);
+          if (error) throw error;
           fetchAllData();
           toast.success("Deleted successfully");
         } catch (error) {
@@ -222,10 +368,11 @@ export default function AdminDashboard() {
     if (table === "brands") setBrands(newOrder);
     if (table === "packages") setPackages(newOrder);
 
-    const updates = newOrder.map((item, index) => ({ id: item.id, sort_order: index }));
-    for (const update of updates) {
-      await supabase.from(table).update({ sort_order: update.sort_order }).eq("id", update.id);
-    }
+    await Promise.all(
+      newOrder.map((item, index) =>
+        supabase.from(table).update({ sort_order: index }).eq("id", item.id)
+      )
+    );
   };
 
   const exportClientsToCSV = () => {
@@ -235,7 +382,7 @@ export default function AdminDashboard() {
       `"${c.name || ''}"`, `"${c.email || ''}"`, `"${c.phone || ''}"`, `"${c.company || ''}"`, `"${c.status || ''}"`, `"${new Date(c.created_at).toLocaleDateString()}"`
     ]);
     const csvContent = [headers.join(","), ...csvData.map(row => row.join(","))].join("\n");
-    const blob = new Blob(["﻿" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -386,13 +533,13 @@ export default function AdminDashboard() {
                 {activeTab === "about" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Profile Image</label>
-                      <DropUploader
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">Profile Image (drag & drop)</label>
+                      <DropZone
                         accept="image/*"
-                        label="Drag & drop your photo here, or click"
-                        value={formData.about_image}
-                        onBusyChange={trackUpload}
-                        onUploaded={(url) => setFormData(prev => ({ ...prev, about_image: url }))}
+                        label="Drop profile image here, or click to browse"
+                        currentUrl={formData.about_image}
+                        onBusy={trackBusy}
+                        onDone={(url) => setFormData((p) => ({ ...p, about_image: url }))}
                       />
                     </div>
                     <div className="md:col-span-2">
@@ -420,31 +567,13 @@ export default function AdminDashboard() {
 
                 {activeTab === "projects" && (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Media (image or video) *</label>
-                      <DropUploader
-                        label="Drag & drop an image or video here, or click"
-                        value={formData.media_url}
-                        onBusyChange={trackUpload}
-                        onUploaded={(url, f) => {
-                          const isVid = f.type.startsWith('video/');
-                          setFormData(prev => ({
-                            ...prev,
-                            media_url: url,
-                            type: isVid ? 'video' : 'image',
-                            video_url: isVid ? url : null,
-                          }));
-                        }}
-                        onClear={() => setFormData(prev => ({ ...prev, media_url: null, video_url: null }))}
-                      />
-                    </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Project Title *</label>
                       <input type="text" placeholder="e.g. Joyalukkas Campaign" className="input" required value={formData.title || ''} onChange={(e) => setFormData({...formData, title: e.target.value})} />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Brand (Company)</label>
-                      <select className="input" value={formData.brand_id || ''} onChange={(e) => setFormData({...formData, brand_id: e.target.value})}>
+                      <select className="input" value={formData.brand_id || ''} onChange={(e) => setFormData({...formData, brand_id: e.target.value || null})}>
                         <option value="">Select Brand (Optional)</option>
                         {brands.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                       </select>
@@ -460,6 +589,33 @@ export default function AdminDashboard() {
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
                       <textarea placeholder="What was this project about?" className="input" rows="3" value={formData.description || ''} onChange={(e) => setFormData({...formData, description: e.target.value})}></textarea>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-2">
+                        Media (drag & drop) {formData.type && <span className="text-xs font-normal text-slate-400">— detected: {formData.type}</span>}
+                      </label>
+                      <DropZone
+                        accept="image/*,video/*"
+                        label="Drop an image or video here, or click to browse"
+                        currentUrl={formData.media_url}
+                        onBusy={trackBusy}
+                        onDone={async (url, f) => {
+                          if (f.type.startsWith('video/')) {
+                            const poster = await makePoster(f);
+                            let posterUrl = null;
+                            if (poster) {
+                              try {
+                                posterUrl = await uploadMedia(new File([poster], 'poster.jpg', { type: 'image/jpeg' }));
+                              } catch (err) {
+                                console.warn("Poster upload failed", err);
+                              }
+                            }
+                            setFormData((p) => ({ ...p, type: 'video', video_url: url, media_url: posterUrl || url }));
+                          } else {
+                            setFormData((p) => ({ ...p, type: 'image', video_url: null, media_url: url }));
+                          }
+                        }}
+                      />
                     </div>
                   </div>
                 )}
@@ -480,23 +636,22 @@ export default function AdminDashboard() {
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Logo (Transparent PNG) *</label>
-                      <DropUploader
+                      <DropZone
                         accept="image/*"
-                        label="Drop the logo here, or click"
-                        value={formData.logo_url}
-                        onBusyChange={trackUpload}
-                        onUploaded={(url) => setFormData(prev => ({ ...prev, logo_url: url }))}
+                        label="Drop logo here, or click to browse"
+                        currentUrl={formData.logo_url}
+                        onBusy={trackBusy}
+                        onDone={(url) => setFormData((p) => ({ ...p, logo_url: url }))}
                       />
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Cover Image (Background)</label>
-                      <DropUploader
+                      <DropZone
                         accept="image/*"
-                        label="Drop the cover here, or click"
-                        value={formData.cover_url}
-                        onBusyChange={trackUpload}
-                        onUploaded={(url) => setFormData(prev => ({ ...prev, cover_url: url }))}
-                        onClear={() => setFormData(prev => ({ ...prev, cover_url: null }))}
+                        label="Drop cover image here, or click to browse"
+                        currentUrl={formData.cover_url}
+                        onBusy={trackBusy}
+                        onDone={(url) => setFormData((p) => ({ ...p, cover_url: url }))}
                       />
                     </div>
                   </div>
@@ -552,7 +707,7 @@ export default function AdminDashboard() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Key (e.g. hero_subtitle)</label>
-                      <input type="text" placeholder="Key" className="input" required disabled={editingId} value={formData.key || ''} onChange={(e) => setFormData({...formData, key: e.target.value})} />
+                      <input type="text" placeholder="Key" className="input" required disabled={!!editingId} value={formData.key || ''} onChange={(e) => setFormData({...formData, key: e.target.value})} />
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-semibold text-slate-700 mb-2">Value</label>
@@ -562,8 +717,8 @@ export default function AdminDashboard() {
                 )}
 
                 <div className="flex gap-3 pt-4 border-t border-slate-100">
-                  <button type="submit" disabled={loading || uploadingCount > 0} className="btn-primary flex-1 md:flex-none px-8">
-                    {uploadingCount > 0 ? "Uploading..." : loading ? "Saving..." : "Save Data"}
+                  <button type="submit" disabled={loading || isUploading} className="btn-primary flex-1 md:flex-none px-8">
+                    {isUploading ? "Uploading..." : loading ? "Saving..." : "Save Data"}
                   </button>
                   <button type="button" onClick={() => setIsFormOpen(false)} className="bg-slate-100 text-slate-600 px-6 py-2.5 rounded-lg font-semibold hover:bg-slate-200 transition-colors">
                     Cancel
@@ -585,9 +740,9 @@ export default function AdminDashboard() {
                       <Reorder.Item key={p.id} value={p} className="bg-slate-50 p-3 rounded-xl border border-slate-200 flex items-center justify-between cursor-grab active:cursor-grabbing hover:border-indigo-300 transition-colors">
                         <div className="flex items-center gap-4">
                           <GripVertical size={20} className="text-slate-300" />
-                          <div className="w-12 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => p.type !== 'video' && setLightboxImage(p.media_url)}>
-                            {p.type === 'video' ? (
-                               <video src={`${p.video_url || p.media_url}#t=0.1`} muted preload="metadata" playsInline className="w-full h-full object-cover" />
+                          <div className="w-12 h-12 bg-slate-200 rounded-lg overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLightboxImage(p.media_url)}>
+                            {p.type === 'video' && !p.media_url ? (
+                               <div className="w-full h-full flex items-center justify-center bg-black text-white"><Briefcase size={16}/></div>
                             ) : (
                                <img src={p.media_url} alt={p.title} className="w-full h-full object-cover" />
                             )}
@@ -786,7 +941,7 @@ export default function AdminDashboard() {
             <div className="bg-white p-10 rounded-2xl border border-slate-200 shadow-sm text-center">
               <UserCircle size={48} className="mx-auto text-indigo-500 mb-4 opacity-50" />
               <h2 className="text-xl font-bold mb-2">About Section</h2>
-              <p className="text-slate-500 mb-6">Manage the text, image, and stats in the "Behind the Pixels" section.</p>
+              <p className="text-slate-500 mb-6">Manage the text, image, and stats in the &quot;Behind the Pixels&quot; section.</p>
               <button onClick={() => handleOpenForm({ ...siteContent, id: 'about' })} className="bg-black text-white px-6 py-3 rounded-xl font-semibold hover:bg-slate-800 inline-flex items-center gap-2 shadow-lg transition-all active:scale-95">
                 <Pencil size={18}/> Edit About Section
               </button>
