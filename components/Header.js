@@ -6,11 +6,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { mobileMenuVariants, mobileLinkVariants } from '@/lib/animations';
-import { useLenis } from 'lenis/react'; // ضفنا ده
+import { useLenis } from 'lenis/react';
 
-export default function Header({ isMenuOpen, setIsMenuOpen }) {
+export default function Header(props) {
+  // لو الصفحة بعتت isMenuOpen (زي صفحة /work) نستخدمها،
+  // لو لأ (زي الصفحة الرئيسية بعد التحويل) الهيدر يدير الحالة بنفسه
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isMenuOpen = props.isMenuOpen ?? internalOpen;
+  const setIsMenuOpen = props.setIsMenuOpen ?? setInternalOpen;
+
   const [scrolled, setScrolled] = useState(false);
-  const lenis = useLenis(); // بنجيب نسخة من Lenis
+  const lenis = useLenis();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -18,12 +24,11 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // الحل النهائي لمشكلة تعليق السكرول
   useEffect(() => {
     if (isMenuOpen) {
-      lenis?.stop(); // بنوقف السكرول بالطريقة الصح
+      lenis?.stop();
     } else {
-      lenis?.start(); // بنشغله تاني
+      lenis?.start();
     }
   }, [isMenuOpen, lenis]);
 
@@ -42,13 +47,13 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
         animate={{ y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-          scrolled 
-            ? 'bg-white/80 backdrop-blur-xl border-b border-black/5 py-3' 
+          scrolled
+            ? 'bg-white/80 backdrop-blur-xl border-b border-black/5 py-3'
             : 'bg-transparent py-5'
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 md:px-12 flex items-center justify-between">
-          
+
           <Link href="/" className="relative z-50 flex items-center" onClick={closeMenu}>
             <div className="relative w-32 md:w-40 h-8 md:h-10">
               <Image
@@ -84,6 +89,7 @@ export default function Header({ isMenuOpen, setIsMenuOpen }) {
           {/* موبايل: زرار القائمة */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
             className="md:hidden relative z-50 w-11 h-11 flex items-center justify-center rounded-full bg-black/5 active:bg-black/10 transition-colors"
           >
             {isMenuOpen ? <X size={22} /> : <Menu size={22} />}

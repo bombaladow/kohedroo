@@ -5,13 +5,33 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { MessageCircle, Mail, ArrowUpRight, ArrowUp, MapPin } from 'lucide-react';
 import { useLenis } from 'lenis/react';
+import { useState, useEffect } from 'react';
 
 export default function ContactFooter({ settings }) {
   const cleanPhoneNumber = settings?.whatsapp?.replace(/[^0-9]/g, '') || '971555780408';
   const whatsappUrl = `https://wa.me/${cleanPhoneNumber}`;
   const emailAddress = settings?.email || 'hello@kohedroo.com';
-  
+
   const lenis = useLenis();
+
+  const [localTime, setLocalTime] = useState('');
+  const [year, setYear] = useState('');
+
+  useEffect(() => {
+    const update = () => {
+      setLocalTime(
+        new Date().toLocaleTimeString('en-US', {
+          timeZone: 'Asia/Dubai',
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      );
+      setYear(String(new Date().getFullYear()));
+    };
+    update();
+    const timer = setInterval(update, 30000);
+    return () => clearInterval(timer);
+  }, []);
 
   const socials = [
     { name: 'Instagram', href: 'https://www.instagram.com/kohedroo/', icon: '/socials/instagram.png' },
@@ -30,17 +50,16 @@ export default function ContactFooter({ settings }) {
     lenis?.scrollTo(0, { duration: 1.5 });
   };
 
-  // إعدادات تنطيط سريعة جداً
   const socialItemVariants = {
     hidden: { opacity: 0, y: 30, scale: 0.6 },
-    show: { 
-      opacity: 1, 
-      y: 0, 
+    show: {
+      opacity: 1,
+      y: 0,
       scale: 1,
-      transition: { 
-        type: "spring", 
-        stiffness: 500, 
-        damping: 20,    
+      transition: {
+        type: "spring",
+        stiffness: 500,
+        damping: 20,
         mass: 0.5
       }
     }
@@ -52,7 +71,7 @@ export default function ContactFooter({ settings }) {
       className="relative bg-[#0a0a0a] text-white pt-16 md:pt-24 mt-12 md:mt-20 rounded-t-[2rem] md:rounded-t-[3.5rem] overflow-hidden z-20"
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12">
-        
+
         {/* === 1. Status Badge === */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -129,7 +148,7 @@ export default function ContactFooter({ settings }) {
 
         {/* === 4. Links & Socials === */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8 md:gap-12 pb-10 md:pb-16 border-b border-white/10">
-          
+
           <nav className="flex flex-col md:flex-row md:items-center gap-2 md:gap-8">
             {links.map((link) => (
               <Link
@@ -143,15 +162,14 @@ export default function ContactFooter({ settings }) {
             ))}
           </nav>
 
-          {/* 🔥 تعديل السوشيال ميديا عشان يظهروا بسرعة جداً 🔥 */}
-          <motion.div 
+          <motion.div
             initial="hidden"
             whileInView="show"
-            viewport={{ once: true, amount: 0.1 }} // التعديل هنا: أول ما يبان أي جزء
+            viewport={{ once: true, amount: 0.1 }}
             variants={{
               hidden: {},
               show: {
-                transition: { staggerChildren: 0.08, delayChildren: 0.1 } // التعديل هنا: سرعة الترتيب
+                transition: { staggerChildren: 0.08, delayChildren: 0.1 }
               }
             }}
             className="flex items-center gap-8 md:gap-10"
@@ -188,7 +206,7 @@ export default function ContactFooter({ settings }) {
           </div>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Local Time: {new Date().toLocaleTimeString('en-US', { timeZone: 'Asia/Dubai', hour: '2-digit', minute: '2-digit' })} GST</span>
+            <span>Local Time: {localTime || '--:--'} GST</span>
           </div>
         </div>
       </div>
@@ -211,7 +229,7 @@ export default function ContactFooter({ settings }) {
       <div className="relative border-t border-white/10 bg-[#050505]">
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-5 md:py-6 flex items-center justify-between gap-4">
           <p className="text-[9px] md:text-xs font-mono text-white/40 uppercase tracking-widest">
-            © {new Date().getFullYear()} Kohedroo — All Rights Reserved
+            © {year || '2026'} Kohedroo — All Rights Reserved
           </p>
           <button
             onClick={scrollToTop}

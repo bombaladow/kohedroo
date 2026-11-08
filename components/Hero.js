@@ -4,20 +4,23 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowDown, MessageSquare } from 'lucide-react';
 import MagneticButton from './MagneticButton';
-import AnimatedCounter from './AnimatedCounter'; // ضفنا العداد
+import AnimatedCounter from './AnimatedCounter';
 
 export default function Hero({ settings }) {
-  // Editable from the dashboard (Site Settings); defaults keep the old values.
   const stats = [
-    [settings?.hero_stat1_value || '13+', settings?.hero_stat1_label || 'Years Exp.'],
-    [settings?.hero_stat2_value || '100+', settings?.hero_stat2_label || 'Videos'],
-    [settings?.hero_stat3_value || 'UAE & EG', settings?.hero_stat3_label || 'Markets'],
+    ['13+', 'Years Exp.'],
+    ['100+', 'Videos'],
+    ['UAE & EG', 'Markets'],
   ];
 
   return (
     <section className="pt-28 md:pt-40 pb-16 md:pb-20 px-4 md:px-12 flex flex-col justify-center items-center text-center overflow-hidden md:min-h-[85vh]">
       <div className="max-w-4xl flex flex-col items-center w-full">
-        
+
+        <h1 className="sr-only">
+          {settings?.hero_title || 'Kohedroo'} — Art Director &amp; AI Creative Lead
+        </h1>
+
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}

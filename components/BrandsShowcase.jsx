@@ -9,12 +9,8 @@ import {
   useTransform,
 } from 'framer-motion';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabaseClient';
 
 const SLIDE_INTERVAL = 1000; // مدة كل لقطة (ms)
-const MAX_SHOTS = 6;
-
-const isVideoUrl = (url) => /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url || '');
 
 function Shot({ shot }) {
   return (
@@ -226,40 +222,7 @@ function BrandButton({ brand, shots, index }) {
   );
 }
 
-export default function BrandsShowcase() {
-  const [brands, setBrands] = useState([]);
-  const [shotsByBrand, setShotsByBrand] = useState({});
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const [{ data: brandsData }, { data: projectsData }] = await Promise.all([
-        supabase.from('brands').select('*').order('sort_order', { ascending: true }),
-        supabase
-          .from('projects')
-          .select('id, brand_id, media_url, video_url, type, sort_order')
-          .not('brand_id', 'is', null)
-          .order('sort_order', { ascending: true }),
-      ]);
-
-      if (brandsData) setBrands(brandsData);
-
-      const grouped = {};
-      (projectsData || []).forEach((p) => {
-        const url = p.media_url || p.video_url;
-        if (!url) return;
-        const list = (grouped[p.brand_id] ||= []);
-        if (list.length >= MAX_SHOTS) return;
-        list.push({
-          key: p.id,
-          url,
-          isVideo: Boolean(p.video_url) && isVideoUrl(url) ? true : isVideoUrl(url),
-        });
-      });
-      setShotsByBrand(grouped);
-    };
-    fetchData();
-  }, []);
-
+export default function BrandsShowcase({ brands = [], shotsByBrand = {} }) {
   if (brands.length === 0) return null;
 
   return (
