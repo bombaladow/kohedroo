@@ -14,7 +14,7 @@ export default function ProjectDetails() {
   const { setIsDataLoaded } = useLoading();
   const [project, setProject] = useState(null);
   const [relatedProjects, setRelatedProjects] = useState([]);
-  
+
   useEffect(() => {
     const fetchProject = async () => {
       const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
@@ -31,7 +31,7 @@ export default function ProjectDetails() {
         .eq('category', data.category)
         .neq('id', id)
         .limit(2);
-      
+
       setRelatedProjects(related || []);
       setIsDataLoaded(true);
     };
@@ -40,7 +40,7 @@ export default function ProjectDetails() {
 
   if (!project) return null;
 
-  const cleanPhoneNumber = '971555780408'; 
+  const cleanPhoneNumber = '971555780408';
   const whatsappMessage = encodeURIComponent(`Hello Kohedroo, I saw the "${project.title}" project in your portfolio and loved it. I'd like a similar design.`);
   const whatsappUrl = `https://wa.me/${cleanPhoneNumber}?text=${whatsappMessage}`;
 
@@ -60,18 +60,31 @@ export default function ProjectDetails() {
 
       <div className="pt-28 md:pt-32 pb-20 px-4 md:px-12 max-w-[1400px] mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
-          
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="lg:col-span-8 flex flex-col gap-6">
-            <div className="w-full rounded-2xl md:rounded-3xl overflow-hidden border border-black/10 bg-zinc-100 shadow-sm">
+
+          {/* الميديا: بتتحدد بأقصى ارتفاع على قد الشاشة عشان الفيديو الطولي يظهر كامل */}
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }} className="lg:col-span-7 flex flex-col gap-6">
+            <div className="w-full rounded-2xl md:rounded-3xl overflow-hidden border border-black/10 bg-black shadow-sm flex items-center justify-center">
               {project.video_url ? (
-                <video src={project.video_url} controls autoPlay muted loop playsInline className="w-full h-auto object-cover" />
+                <video
+                  src={project.video_url}
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  className="w-full h-auto max-h-[85vh] object-contain"
+                />
               ) : (
-                <img src={project.media_url} alt={project.title} className="w-full h-auto object-cover" />
+                <img
+                  src={project.media_url}
+                  alt={project.title}
+                  className="w-full h-auto max-h-[85vh] object-contain"
+                />
               )}
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="lg:col-span-4 relative">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="lg:col-span-5 relative">
             <div className="md:sticky md:top-32">
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-xs font-mono uppercase tracking-widest font-bold border border-black/20 px-3 py-1 rounded-full bg-zinc-50">
@@ -79,19 +92,15 @@ export default function ProjectDetails() {
                 </span>
                 <span className="text-xs font-mono uppercase tracking-widest font-bold text-zinc-500">{project.year}</span>
               </div>
-              
-              <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter mb-4 md:mb-6 leading-tight">{project.title}</h1>
-              
-              <p className="text-zinc-600 text-base md:text-lg leading-relaxed mb-8 whitespace-pre-wrap">
-                {project.description || "No description provided for this project."}
-              </p>
+
+              <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter mb-8 leading-tight">{project.title}</h1>
 
               <div className="w-full h-[1px] bg-black/10 mb-8"></div>
 
               <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="w-full flex items-center justify-center gap-3 bg-black text-white px-8 py-4 rounded-xl md:rounded-2xl font-bold text-base md:text-lg hover:bg-zinc-800 transition-all shadow-xl active:scale-95">
                 <MessageCircle size={22} /> Request Similar Design
               </a>
-              
+
               <p className="text-center text-xs text-zinc-400 mt-3 font-mono mb-8">* We will contact you shortly.</p>
 
               <div className="flex flex-col items-center border-t border-black/5 pt-8">
@@ -115,11 +124,7 @@ export default function ProjectDetails() {
               {relatedProjects.map((rp) => (
                 <Link key={rp.id} href={`/work/${rp.id}`} className="group block">
                   <div className="aspect-[16/10] rounded-2xl overflow-hidden bg-zinc-100 mb-4 border border-black/5">
-                    {rp.video_url ? (
-                      <video src={`${rp.video_url}#t=0.1`} muted playsInline preload="metadata" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    ) : (
-                      <img src={rp.media_url} alt={rp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    )}
+                    <img src={rp.media_url} alt={rp.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                   </div>
                   <h3 className="text-lg md:text-xl font-bold group-hover:text-zinc-600 transition-colors">{rp.title}</h3>
                   <p className="text-xs md:text-sm text-zinc-500 font-mono mt-1">{rp.category}</p>
