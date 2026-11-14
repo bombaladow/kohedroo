@@ -1,78 +1,136 @@
+
 import { cache } from 'react';
 import { notFound } from 'next/navigation';
 import { supabaseServer } from '@/lib/supabaseServer';
-import ProjectView from '@/components/ProjectView';
+
+import Header from '@/components/Header';
 import PageReady from '@/components/PageReady';
+import ScrollProgress from '@/components/ScrollProgress';
+import FloatingContact from '@/components/FloatingContact';
+import BrandExperience from '@/components/BrandExperience';
+
 import { SITE_URL } from '@/lib/site';
 
 export const revalidate = 60;
 
-const getProject = cache(async (id) => {
-  const { data: project, error } = await supabaseServer
-    .from('projects')
+
+/* =========================================
+   FETCH BRAND + PROJECTS
+========================================= */
+
+const getBrandData = cache(async (id) => {
+  const { data: brand, error } = await supabaseServer
+    .from('brands')
     .select('*')
     .eq('id', id)
     .maybeSingle();
 
-  // أي خطأ حقيقي (اتصال / env / صلاحيات) يظهر كخطأ برسالته بدل ما يتحول لـ 404
   if (error) {
-    console.error('getProject failed:', id, error);
+    console.error('getBrand failed:', id, error);
     throw new Error(`Supabase error: ${error.message}`);
   }
 
-  // مشروع مش موجود فعلاً = 404 سليم
-  if (!project) return null;
+  if (!brand) return null;
 
-  const { data: related, error: relError } = await supabaseServer
-    .from('projects')
-    .select('*')
-    .eq('category', project.category)
-    .neq('id', id)
-    .limit(2);
-  if (relError) console.error('related failed:', relError);
+  const { data: projects, error: projectsError } =
+    await supabaseServer
+      .from('projects')
+      .select('*')
+      .eq('brand_id', id)
+      .order('sort_order', { ascending: true });
 
-  return { project, related: related || [] };
+  if (projectsError) {
+    console.error('getBrand projects failed:', id, projectsError);
+    throw new Error(`Supabase error: ${projectsError.message}`);
+  }
+
+  return {
+    brand,
+    projects: projects || [],
+  };
 });
+
+
+/* =========================================
+   SEO METADATA
+========================================= */
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
-  const data = await getProject(id);
+
+  const data = await getBrandData(id);
+
   if (!data) return {};
-  const { project } = data;
+
+  const { brand } = data;
+
   return {
-    title: project.title,
+    title: `${brand.name} — Kohedroo`,
+
     description:
-      project.description?.slice(0, 160) ||
-      `${project.title} — ${project.category || 'project'} by Kohedroo.`,
-    alternates: { canonical: `/work/${id}` },
-    openGraph: { images: project.media_url ? [project.media_url] : [] },
+      `${brand.name} creative projects and case studies by Kohedroo.`,
+
+    alternates: {
+      canonical: `/brand/${id}`,
+    },
+
+    openGraph: {
+      images: brand.logo_url ? [brand.logo_url] : [],
+    },
   };
 }
 
-export default async function ProjectPage({ params }) {
+
+/* =========================================
+   BRAND PAGE
+========================================= */
+
+export default async function BrandPage({ params }) {
   const { id } = await params;
-  const data = await getProject(id);
-  if (!data) notFound();
-  const { project, related } = data;
+
+  const data = await getBrandData(id);
+
+  if (!data) {
+    notFound();
+  }
+
+  const { brand, projects } = data;
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'CreativeWork',
-    name: project.title,
-    description: project.description,
-    image: project.media_url,
-    dateCreated: project.year,
-    author: { '@type': 'Person', name: 'Kohedroo', url: SITE_URL },
+    '@type': 'Brand',
+    name: brand.name,
+    logo: brand.logo_url,
+    url: `${SITE_URL}/brand/${id}`,
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-[#f4f1eb] text-[#22211f]">
+
+      {/* SEO */}
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(jsonLd),
+        }}
       />
+
       <PageReady />
-      <ProjectView project={project} relatedProjects={related} />
-    </>
+
+      <ScrollProgress />
+
+      {/* KEEP EXISTING NAVBAR */}
+      <Header />
+
+      <main>
+        <BrandExperience
+          brand={brand}
+          projects={projects}
+        />
+      </main>
+
+      <FloatingContact settings={{}} />
+
+    </div>
   );
 }
