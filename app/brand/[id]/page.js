@@ -8,19 +8,28 @@ import { SITE_URL } from '@/lib/site';
 export const revalidate = 60;
 
 const getProject = cache(async (id) => {
-  const { data: project } = await supabaseServer
+  const { data: project, error } = await supabaseServer
     .from('projects')
     .select('*')
     .eq('id', id)
-    .single();
+    .maybeSingle();
+
+  // أي خطأ حقيقي (اتصال / env / صلاحيات) يظهر كخطأ برسالته بدل ما يتحول لـ 404
+  if (error) {
+    console.error('getProject failed:', id, error);
+    throw new Error(`Supabase error: ${error.message}`);
+  }
+
+  // مشروع مش موجود فعلاً = 404 سليم
   if (!project) return null;
 
-  const { data: related } = await supabaseServer
+  const { data: related, error: relError } = await supabaseServer
     .from('projects')
     .select('*')
     .eq('category', project.category)
     .neq('id', id)
     .limit(2);
+  if (relError) console.error('related failed:', relError);
 
   return { project, related: related || [] };
 });
