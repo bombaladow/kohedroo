@@ -3,6 +3,9 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Play, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
 
+// الرابط ده صورة ولا فيديو؟
+const isImageUrl = (u) => u && !/\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(u);
+
 export default function BrandView({ brand, projects }) {
   return (
     <div className="min-h-screen bg-zinc-50">
@@ -53,39 +56,65 @@ export default function BrandView({ brand, projects }) {
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-20">
         {projects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
-            {projects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="group relative"
-              >
-                <Link href={`/work/${project.id}`} className="block">
-                  <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-zinc-200 mb-6">
-                    {project.video_url ? (
-                      <video src={project.video_url} muted loop playsInline className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    ) : (
-                      <img src={project.media_url} alt={project.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                    )}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                      <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
-                        {project.video_url ? <Play size={24} className="text-white ml-1" fill="white" /> : <ArrowUpRight size={24} className="text-white" />}
+            {projects.map((project, index) => {
+              const isVideo = Boolean(project.video_url) || !isImageUrl(project.media_url);
+              const videoSrc = project.video_url || project.media_url;
+
+              return (
+                // animate بدل whileInView: الكارت يظهر دايماً حتى لو الـ IntersectionObserver مشتغلش على الموبايل
+                <motion.div
+                  key={project.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: Math.min(index, 6) * 0.06 }}
+                  className="group relative"
+                >
+                  <Link href={`/work/${project.id}`} className="block">
+                    <div className="relative aspect-[4/3] rounded-3xl overflow-hidden bg-zinc-200 mb-6">
+                      {isImageUrl(project.media_url) ? (
+                        // لو في صورة (أو غلاف فيديو) نعرضها بدل ما نحمّل الفيديو
+                        <img
+                          src={project.media_url}
+                          alt={project.title}
+                          loading="lazy"
+                          className="w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-700"
+                        />
+                      ) : (
+                        <video
+                          src={`${videoSrc}#t=0.1`}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-cover md:group-hover:scale-105 transition-transform duration-700"
+                        />
+                      )}
+
+                      {/* على الموبايل مفيش hover، فأيقونة التشغيل ظاهرة دايماً للفيديو */}
+                      {isVideo && (
+                        <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black/50 flex items-center justify-center md:hidden">
+                          <Play size={16} className="text-white ml-0.5" fill="white" />
+                        </div>
+                      )}
+
+                      {/* الـ overlay بتاع الهوفر للديسكتوب بس */}
+                      <div className="hidden md:flex absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 items-center justify-center">
+                        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center">
+                          {isVideo ? <Play size={24} className="text-white ml-1" fill="white" /> : <ArrowUpRight size={24} className="text-white" />}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-2xl font-bold tracking-tight mb-1 group-hover:text-zinc-600 transition-colors">{project.title}</h3>
-                      <p className="text-sm font-mono text-zinc-500 uppercase tracking-widest">{project.category}</p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-2xl font-bold tracking-tight mb-1 group-hover:text-zinc-600 transition-colors">{project.title}</h3>
+                        <p className="text-sm font-mono text-zinc-500 uppercase tracking-widest">{project.category}</p>
+                      </div>
+                      <span className="text-sm font-mono text-zinc-400 border border-black/10 px-3 py-1 rounded-full">{project.year}</span>
                     </div>
-                    <span className="text-sm font-mono text-zinc-400 border border-black/10 px-3 py-1 rounded-full">{project.year}</span>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
+                  </Link>
+                </motion.div>
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-32 text-zinc-500 font-mono">
